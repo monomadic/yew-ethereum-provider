@@ -1,7 +1,7 @@
 use yew::prelude::*;
 
 mod components;
-use components::{ EthereumContext, EthereumProvider, test_component::TestComponent };
+use components::{ EthereumContext, EthereumProvider, TestComponent };
 
 #[function_component(Main)]
 pub fn main() -> Html {

@@ -3,6 +3,14 @@ use web3::{
     transports::eip_1193::{Eip1193, Provider},
 };
 
+#[derive(Clone, Debug)]
+pub struct Web3Wrapper(pub web3::Web3<Eip1193>);
+impl PartialEq for Web3Wrapper {
+    fn eq(&self, _other: &Self) -> bool {
+        true
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct Connection {
     pub connected: bool,
@@ -10,9 +18,9 @@ pub struct Connection {
     pub error: Option<String>,
 }
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EthereumContext {
-    pub web3: web3::Web3<Eip1193>,
+    pub web3: Web3Wrapper,
     pub connection: Connection,
 }
 
@@ -45,7 +53,7 @@ impl Component for EthereumProvider {
 
         let provider = Provider::default().unwrap().unwrap();
         let transport: Eip1193 = Eip1193::new(provider);
-        let _web3 = web3::Web3::new(transport);
+        let _web3 = Web3Wrapper(web3::Web3::new(transport));
 
         let eth_ctx = EthereumContext {
             web3: _web3,

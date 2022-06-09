@@ -1,11 +1,12 @@
-use yew::{Component, Context, Html, html, Callback};
+use yew::prelude::*;
 use crate::EthereumContext;
 
 #[derive(Default)]
 pub struct TestComponent;
 
 pub enum Msg {
-    
+    ClickedConnect,
+    Connected(bool),
 }
 
 
@@ -17,17 +18,25 @@ impl Component for TestComponent {
         Self::default()
     }
 
-    // fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-    //     Ok(true)
-    // }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let (ethereum, _) = ctx.link().context::<EthereumContext>(Callback::noop())
             .expect("context to be set");
+        match msg {
+            Msg::ClickedConnect => { 
+                ctx.link().send_future(async move{
+                    ethereum.web3.0.eth().request_accounts().await.unwrap();
+                    Msg::Connected(true)
+                });    
+                true
+            }
+            Msg::Connected(_is_onnected) => { true }
+        }
+    }
 
+    fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <div>
-                { ethereum.connection.connected.clone() }
+                <button onclick={ctx.link().callback(|_| Msg::ClickedConnect)}>{"Connect"}</button>
             </div>
         }
     }
