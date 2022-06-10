@@ -1,7 +1,7 @@
-use yew::{Component, Context, Html, html, ContextProvider, Properties, Children};
-use web3::{
-    transports::eip_1193::{Eip1193, Provider},
-};
+use wasm_bindgen_futures::spawn_local;
+use web3::futures::StreamExt;
+use web3::transports::eip_1193::{Eip1193, Provider};
+use yew::{html, Callback, Children, Component, Context, ContextProvider, Html, Properties};
 
 #[derive(Clone, Debug)]
 pub struct Web3Wrapper(pub web3::Web3<Eip1193>);
@@ -12,20 +12,14 @@ impl PartialEq for Web3Wrapper {
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
-pub struct Connection {
-    pub connected: bool,
-    pub is_loading: bool,
-    pub error: Option<String>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct EthereumContext {
-    pub web3: Web3Wrapper,
-    pub connection: Connection,
+pub enum ConnectionStatus {
+    #[default]
+    Disconnected,
+    Connected,
 }
 
 pub enum Msg {
-    
+    AccountsChanged(Vec<String>),
 }
 
 #[derive(Properties, PartialEq)]
@@ -34,40 +28,67 @@ pub struct Props {
     pub children: Children,
 }
 
-#[derive(Default)]
-pub struct EthereumProvider;
+#[derive(Clone, Debug, PartialEq)]
+pub struct EthereumProvider {
+    pub web3: Web3Wrapper,
+    pub connection_status: ConnectionStatus,
+    pub accounts: Vec<String>,
+}
+
+impl EthereumProvider {
+    pub async fn connect(&self) {
+        // TODO: remove unwrap, return Result
+        self.web3.0.eth().request_accounts().await.unwrap();
+    }
+}
 
 impl Component for EthereumProvider {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self::default()
-    }
-
-    // fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-    //     Ok(true)
-    // }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
-
+    fn create(ctx: &Context<Self>) -> Self {
         let provider = Provider::default().unwrap().unwrap();
         let transport: Eip1193 = Eip1193::new(provider);
         let _web3 = Web3Wrapper(web3::Web3::new(transport));
 
-        let eth_ctx = EthereumContext {
-            web3: _web3,
-            connection: Connection {
-                connected: false,
-                is_loading: true,
-                error: None,
-            }
-        };
+        // spawn_local(async move {
+        //     let provider = Provider::default().unwrap().unwrap();
+        //     let transport: Eip1193 = Eip1193::new(provider);
+        //     let mut stream = transport.clone().accounts_changed_stream();
+        //     while let Some(accounts) = stream.next().await {
+        //         ctx.link().send_message(Msg::AccountsChanged(Vec::new()));
+        //     }
+        // });
 
-        html! {
-            <ContextProvider<EthereumContext> context={eth_ctx}>
-                {for ctx.props().children.iter()}
-            </ContextProvider<EthereumContext>>
+        Self {
+            web3: _web3,
+            connection_status: ConnectionStatus::default(),
+            accounts: Vec::default(),
         }
     }
+
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Msg::AccountsChanged(accounts) => {
+                self.connection_status = ConnectionStatus::Connected;
+                true
+            }
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        html! {
+            <ContextProvider<EthereumProvider> context={self.clone()}>
+                {for ctx.props().children.iter()}
+            </ContextProvider<EthereumProvider>>
+        }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+        true
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {}
+
+    fn destroy(&mut self, ctx: &Context<Self>) {}
 }

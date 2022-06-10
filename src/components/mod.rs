@@ -1,5 +1,5 @@
+mod connect_account_button;
 mod ethereum_provider;
-mod test_component;
 
-pub use ethereum_provider::{EthereumContext, EthereumProvider};
-pub use test_component::TestComponent;
+pub use connect_account_button::ConnectButtonComponent;
+pub use ethereum_provider::EthereumProvider;

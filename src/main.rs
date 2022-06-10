@@ -1,15 +1,13 @@
 use yew::prelude::*;
 
 mod components;
-use components::{ EthereumContext, EthereumProvider, TestComponent };
+use components::{ConnectButtonComponent, EthereumProvider};
 
 #[function_component(Main)]
 pub fn main() -> Html {
-
     html! {
-        
         <EthereumProvider>
-            <TestComponent />
+            <ConnectButtonComponent />
         </EthereumProvider>
     }
 }
