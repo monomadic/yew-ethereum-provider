@@ -52,7 +52,7 @@ pub enum TransactionParam {
 
 #[derive(Serialize, Default)]
 pub struct TransactionCallParams {
-    pub chain_id: String,
+    pub chainId: String,
 }
 
 #[wasm_bindgen]
@@ -76,7 +76,7 @@ impl EthereumProvider {
             method: "wallet_switchEthereumChain".into(),
             params: vec![
                 TransactionParam::Params(TransactionCallParams {
-                    chain_id: chain_id.clone(),
+                    chainId: chain_id.into(),
                 })
             ],
         }).unwrap()).await;

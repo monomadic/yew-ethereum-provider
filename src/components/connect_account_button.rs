@@ -1,8 +1,11 @@
 use crate::EthereumProvider;
 use yew::prelude::*;
+use web_sys::HtmlInputElement;
 
 #[derive(Default)]
-pub struct ConnectButtonComponent;
+pub struct ConnectButtonComponent {
+    select_switch_network: NodeRef,
+}
 
 pub enum Msg {
     ClickedConnect,
@@ -15,7 +18,9 @@ impl Component for ConnectButtonComponent {
     type Properties = ();
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self::default()
+        Self {
+            select_switch_network: NodeRef::default(),
+        }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -23,7 +28,7 @@ impl Component for ConnectButtonComponent {
             .link()
             .context::<EthereumProvider>(Callback::noop())
             .expect("context to be set");
-
+        let select = self.select_switch_network.cast::<HtmlInputElement>();
         match msg {
             Msg::ClickedConnect => {
                 ctx.link().send_future(async move {
@@ -36,7 +41,7 @@ impl Component for ConnectButtonComponent {
 
             Msg::ChangedChain => {
                 ctx.link().send_future(async move {
-                    ethereum.switch_chain("0x1".to_string()).await;
+                    ethereum.switch_chain(select.unwrap().value()).await;
                     // ethereum.web3.0.eth().request_accounts().await.unwrap();
                     Msg::Connected
                 });
@@ -56,7 +61,16 @@ impl Component for ConnectButtonComponent {
         html! {
             <div>
                 <button onclick={ctx.link().callback(|_| Msg::ClickedConnect)}>{"Connect"}</button>
-                <button onclick={ctx.link().callback(|_| Msg::ChangedChain)}>{"Change Network"}</button>
+                <br />
+                <select 
+                    ref={self.select_switch_network.clone()}
+                    onchange={ctx.link().callback(|_| Msg::ChangedChain)}
+                >
+                    <option selected=true value="0x1">{ "Ethereum" }</option>
+                    <option value="0x38">{ "BSC" }</option>
+                </select>
+                // <button onclick={ctx.link().callback(|_| Msg::ChangedChain)}>{"Change Network"}</button>
+                <br />
                 { format!("{:?}", ethereum.connection_status) }
             </div>
         }
