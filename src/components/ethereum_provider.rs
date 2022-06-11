@@ -1,7 +1,9 @@
 use wasm_bindgen_futures::spawn_local;
 use web3::futures::StreamExt;
 use web3::transports::eip_1193::{Eip1193, Provider};
-use yew::{html, Callback, Children, Component, Context, ContextProvider, Html, Properties};
+use yew::{
+    events::Event, html, Callback, Children, Component, Context, ContextProvider, Html, Properties,
+};
 
 #[derive(Clone, Debug)]
 pub struct Web3Wrapper(pub web3::Web3<Eip1193>);
@@ -36,9 +38,8 @@ pub struct EthereumProvider {
 }
 
 impl EthereumProvider {
-    pub async fn connect(&self) {
-        // TODO: remove unwrap, return Result
-        self.web3.0.eth().request_accounts().await.unwrap();
+    pub async fn connect(&self) -> Result<(), web3::Error> {
+        self.web3.0.eth().request_accounts().await.map(|_| ())
     }
 }
 
@@ -56,7 +57,14 @@ impl Component for EthereumProvider {
         //     let transport: Eip1193 = Eip1193::new(provider);
         //     let mut stream = transport.clone().accounts_changed_stream();
         //     while let Some(accounts) = stream.next().await {
-        //         ctx.link().send_message(Msg::AccountsChanged(Vec::new()));
+        //         let accounts = accounts
+        //             .into_iter()
+        //             .map(|account| account.to_string())
+        //             .collect();
+        //
+        //         let ev = ctx.link().callback(|_| Msg::AccountsChanged(accounts));
+        //
+        //         ev.emit(accounts);
         //     }
         // });
 

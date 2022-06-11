@@ -27,7 +27,6 @@ impl Component for ConnectButtonComponent {
             Msg::ClickedConnect => {
                 ctx.link().send_future(async move {
                     ethereum.connect().await;
-                    // ethereum.web3.0.eth().request_accounts().await.unwrap();
                     Msg::Connected
                 });
                 false
