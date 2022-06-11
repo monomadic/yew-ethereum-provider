@@ -1,11 +1,15 @@
+use std::rc::Rc;
+
 use crate::EthereumProvider;
+use wasm_bindgen_futures::spawn_local;
+use web3::helpers::CallFuture;
 use yew::prelude::*;
 use web_sys::HtmlInputElement;
 
-#[derive(Default)]
-pub struct ConnectButtonComponent {
-    select_switch_network: NodeRef,
-}
+use super::ethereum_provider::AccountState;
+
+// #[derive(Default)]
+// pub struct ConnectButtonComponent;
 
 pub enum Msg {
     ClickedConnect,
@@ -13,66 +17,66 @@ pub enum Msg {
     ChangedChain,
 }
 
-impl Component for ConnectButtonComponent {
-    type Message = Msg;
-    type Properties = ();
+#[function_component(ConnectButtonComponent)]
+pub fn create() -> Html {
+    let account = use_context::<Rc<AccountState>>().expect("No context found.");
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self {
-            select_switch_network: NodeRef::default(),
-        }
-    }
+    let onclick = Callback::from(move |_| {
+        // spawn_local(async {
+        //     account.connect().await;
+        // });
+    });
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let (ethereum, _) = ctx
-            .link()
-            .context::<EthereumProvider>(Callback::noop())
-            .expect("context to be set");
-        let select = self.select_switch_network.cast::<HtmlInputElement>();
-        match msg {
-            Msg::ClickedConnect => {
-                ctx.link().send_future(async move {
-                    ethereum.connect().await;
-                    // ethereum.web3.0.eth().request_accounts().await.unwrap();
-                    Msg::Connected
-                });
-                false
-            }
-
-            Msg::ChangedChain => {
-                ctx.link().send_future(async move {
-                    ethereum.switch_chain(select.unwrap().value()).await;
-                    // ethereum.web3.0.eth().request_accounts().await.unwrap();
-                    Msg::Connected
-                });
-                false
-            }
-
-            Msg::Connected => true, // update view
-        }
-    }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
-        let (ethereum, _) = ctx
-            .link()
-            .context::<EthereumProvider>(Callback::noop())
-            .expect("context to be set");
-
-        html! {
-            <div>
-                <button onclick={ctx.link().callback(|_| Msg::ClickedConnect)}>{"Connect"}</button>
-                <br />
-                <select 
-                    ref={self.select_switch_network.clone()}
-                    onchange={ctx.link().callback(|_| Msg::ChangedChain)}
-                >
-                    <option selected=true value="0x1">{ "Ethereum" }</option>
-                    <option value="0x38">{ "BSC" }</option>
-                </select>
-                // <button onclick={ctx.link().callback(|_| Msg::ChangedChain)}>{"Change Network"}</button>
-                <br />
-                { format!("{:?}", ethereum.connection_status) }
-            </div>
-        }
+    html! {
+        <div>
+            <button onclick={onclick}>{"Connect"}</button>
+            // { format!("{:?}", account) }
+        </div>
     }
 }
+
+// impl Component for ConnectButtonComponent {
+//     type Message = Msg;
+//     type Properties = ();
+//
+//     fn create(_ctx: &Context<Self>) -> Self {
+//         Self::default()
+//     }
+//
+//     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+//         // let (ethereum, _) = ctx
+//         //     .link()
+//         //     .context::<EthereumProvider>(Callback::noop())
+//         //     .expect("context to be set");
+//
+//         let account = use_context::<AccountState>().expect("No context found.");
+//
+//         match msg {
+//             Msg::ClickedConnect => {
+//                 ctx.link().send_future(async move {
+//                     // ethereum.connect().await;
+//                     // account.connect().await;
+//                     Msg::Connected
+//                 });
+//                 false
+//             }
+//             Msg::Connected => true, // update view
+//         }
+//     }
+//
+//     fn view(&self, ctx: &Context<Self>) -> Html {
+//         // let (ethereum, _) = ctx
+//         //     .link()
+//         //     .context::<EthereumProvider>(Callback::noop())
+//         //     .expect("context to be set");
+//
+//         let account = use_context::<AccountState>().expect("No context found.");
+//
+//         html! {
+//             <div>
+//                 <button onclick={ctx.link().callback(|_| Msg::ClickedConnect)}>{"Connect"}</button>
+//                 // { format!("{:?}", ethereum) }
+//             </div>
+//         }
+//     }
+// }

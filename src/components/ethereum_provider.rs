@@ -1,8 +1,12 @@
+use std::rc::Rc;
+
+use wasm_bindgen_futures::spawn_local;
+use web3::futures::StreamExt;
 use web3::transports::eip_1193::{Eip1193, Provider};
-use serde::Serialize;
-use yew::{html, Children, Component, Context, ContextProvider, Html, Properties};
-use js_sys::{JsString, Function};
-use wasm_bindgen::{JsValue, prelude::*};
+use yew::{
+    events::Event, html, Callback, Children, Component, Context, ContextProvider, Html, Properties,
+};
+use yew::{function_component, use_state};
 
 #[derive(Clone, Debug)]
 pub struct Web3Wrapper(pub web3::Web3<Eip1193>);
@@ -30,45 +34,20 @@ pub struct Props {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct EthereumProvider {
-    pub web3: Web3Wrapper,
+pub struct EthereumProviderOld {
     pub connection_status: ConnectionStatus,
     pub accounts: Vec<String>,
 }
 
-#[derive(Serialize)]
-pub struct TransactionArgs {
-    pub method: String,
-
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub params: Vec<TransactionParam>,
+#[derive(Debug, PartialEq, Clone)]
+pub struct AccountState {
+    pub status: ConnectionStatus,
+    pub web3: Web3Wrapper,
 }
 
-#[derive(Serialize)]
-#[serde(untagged)]
-pub enum TransactionParam {
-    Params(TransactionCallParams),
-}
-
-#[derive(Serialize, Default)]
-pub struct TransactionCallParams {
-    pub chainId: String,
-}
-
-#[wasm_bindgen]
-extern "C" {
-
-    #[wasm_bindgen(catch, js_namespace=["window", "ethereum"], js_name=request)]
-    pub async fn ethereum_request(args: &JsValue) -> Result<JsValue, JsString>;
-
-    #[wasm_bindgen(js_namespace=["window", "ethereum"], js_name=on)]
-    pub fn on(event: &JsString, handler: &Function);
-}
-
-impl EthereumProvider {
-    pub async fn connect(&self) {
-        // TODO: remove unwrap, return Result
-        self.web3.0.eth().request_accounts().await.unwrap();
+impl AccountState {
+    pub async fn connect(&self) -> Result<(), web3::Error> {
+        self.web3.0.eth().request_accounts().await.map(|_| ())
     }
 
     pub async fn switch_chain (&self, chain_id: String) {
@@ -84,44 +63,22 @@ impl EthereumProvider {
 
 }
 
-impl Component for EthereumProvider {
-    type Message = Msg;
-    type Properties = Props;
+#[function_component(EthereumProvider)]
+pub fn create(props: &Props) -> Html {
+    let provider = Provider::default().unwrap().unwrap();
+    let transport: Eip1193 = Eip1193::new(provider);
+    let web3 = Web3Wrapper(web3::Web3::new(transport));
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        let provider = Provider::default().unwrap().unwrap();
-        let transport: Eip1193 = Eip1193::new(provider);
-        let _web3 = Web3Wrapper(web3::Web3::new(transport));
+    let ctx = use_state(|| {
+        Rc::new(AccountState {
+            status: ConnectionStatus::default(),
+            web3,
+        })
+    });
 
-        Self {
-            web3: _web3,
-            connection_status: ConnectionStatus::default(),
-            accounts: Vec::default(),
-        }
+    html! {
+        <ContextProvider<Rc<AccountState>> context={(*ctx).clone()}>
+            {for props.children.iter()}
+        </ContextProvider<Rc<AccountState>>>
     }
-
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
-        match msg {
-            Msg::AccountsChanged(_accounts) => {
-                self.connection_status = ConnectionStatus::Connected;
-                true
-            }
-        }
-    }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
-        html! {
-            <ContextProvider<EthereumProvider> context={self.clone()}>
-                {for ctx.props().children.iter()}
-            </ContextProvider<EthereumProvider>>
-        }
-    }
-
-    fn changed(&mut self, _ctx: &Context<Self>) -> bool {
-        true
-    }
-
-    fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {}
-
-    fn destroy(&mut self, _ctx: &Context<Self>) {}
 }
