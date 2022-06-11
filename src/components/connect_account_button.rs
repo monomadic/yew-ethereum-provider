@@ -4,7 +4,6 @@ use crate::EthereumProvider;
 use wasm_bindgen_futures::spawn_local;
 use web3::helpers::CallFuture;
 use yew::prelude::*;
-use web_sys::HtmlInputElement;
 
 use super::ethereum_provider::AccountState;
 
@@ -21,15 +20,16 @@ pub enum Msg {
 pub fn create() -> Html {
     let account = use_context::<Rc<AccountState>>().expect("No context found.");
 
-    let onclick = Callback::from(move |_| {
-        // spawn_local(async {
-        //     account.connect().await;
-        // });
+    let connect_wallet = Callback::from(move |_| {
+        let acc = account.clone();
+        spawn_local(async move {
+            acc.connect().await;
+        });
     });
 
     html! {
         <div>
-            <button onclick={onclick}>{"Connect"}</button>
+            <button onclick={connect_wallet}>{"Connect"}</button>
             // { format!("{:?}", account) }
         </div>
     }

@@ -49,18 +49,6 @@ impl AccountState {
     pub async fn connect(&self) -> Result<(), web3::Error> {
         self.web3.0.eth().request_accounts().await.map(|_| ())
     }
-
-    pub async fn switch_chain (&self, chain_id: String) {
-        ethereum_request(&JsValue::from_serde(&TransactionArgs {
-            method: "wallet_switchEthereumChain".into(),
-            params: vec![
-                TransactionParam::Params(TransactionCallParams {
-                    chainId: chain_id.into(),
-                })
-            ],
-        }).unwrap()).await;
-    }
-
 }
 
 #[function_component(EthereumProvider)]
