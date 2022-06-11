@@ -7,6 +7,7 @@ pub struct ConnectButtonComponent;
 pub enum Msg {
     ClickedConnect,
     Connected,
+    ChangedChain,
 }
 
 impl Component for ConnectButtonComponent {
@@ -32,6 +33,16 @@ impl Component for ConnectButtonComponent {
                 });
                 false
             }
+
+            Msg::ChangedChain => {
+                ctx.link().send_future(async move {
+                    ethereum.switch_chain("0x1".to_string()).await;
+                    // ethereum.web3.0.eth().request_accounts().await.unwrap();
+                    Msg::Connected
+                });
+                false
+            }
+
             Msg::Connected => true, // update view
         }
     }
@@ -45,6 +56,7 @@ impl Component for ConnectButtonComponent {
         html! {
             <div>
                 <button onclick={ctx.link().callback(|_| Msg::ClickedConnect)}>{"Connect"}</button>
+                <button onclick={ctx.link().callback(|_| Msg::ChangedChain)}>{"Change Network"}</button>
                 { format!("{:?}", ethereum.connection_status) }
             </div>
         }

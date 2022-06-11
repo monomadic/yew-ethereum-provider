@@ -1,7 +1,8 @@
-use wasm_bindgen_futures::spawn_local;
-use web3::futures::StreamExt;
 use web3::transports::eip_1193::{Eip1193, Provider};
-use yew::{html, Callback, Children, Component, Context, ContextProvider, Html, Properties};
+use serde::Serialize;
+use yew::{html, Children, Component, Context, ContextProvider, Html, Properties};
+use js_sys::{JsString, Function};
+use wasm_bindgen::{JsValue, prelude::*};
 
 #[derive(Clone, Debug)]
 pub struct Web3Wrapper(pub web3::Web3<Eip1193>);
@@ -35,30 +36,62 @@ pub struct EthereumProvider {
     pub accounts: Vec<String>,
 }
 
+#[derive(Serialize)]
+pub struct TransactionArgs {
+    pub method: String,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub params: Vec<TransactionParam>,
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum TransactionParam {
+    Params(TransactionCallParams),
+}
+
+#[derive(Serialize, Default)]
+pub struct TransactionCallParams {
+    pub chain_id: String,
+}
+
+#[wasm_bindgen]
+extern "C" {
+
+    #[wasm_bindgen(catch, js_namespace=["window", "ethereum"], js_name=request)]
+    pub async fn ethereum_request(args: &JsValue) -> Result<JsValue, JsString>;
+
+    #[wasm_bindgen(js_namespace=["window", "ethereum"], js_name=on)]
+    pub fn on(event: &JsString, handler: &Function);
+}
+
 impl EthereumProvider {
     pub async fn connect(&self) {
         // TODO: remove unwrap, return Result
         self.web3.0.eth().request_accounts().await.unwrap();
     }
+
+    pub async fn switch_chain (&self, chain_id: String) {
+        ethereum_request(&JsValue::from_serde(&TransactionArgs {
+            method: "wallet_switchEthereumChain".into(),
+            params: vec![
+                TransactionParam::Params(TransactionCallParams {
+                    chain_id: chain_id.clone(),
+                })
+            ],
+        }).unwrap()).await;
+    }
+
 }
 
 impl Component for EthereumProvider {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(ctx: &Context<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         let provider = Provider::default().unwrap().unwrap();
         let transport: Eip1193 = Eip1193::new(provider);
         let _web3 = Web3Wrapper(web3::Web3::new(transport));
-
-        // spawn_local(async move {
-        //     let provider = Provider::default().unwrap().unwrap();
-        //     let transport: Eip1193 = Eip1193::new(provider);
-        //     let mut stream = transport.clone().accounts_changed_stream();
-        //     while let Some(accounts) = stream.next().await {
-        //         ctx.link().send_message(Msg::AccountsChanged(Vec::new()));
-        //     }
-        // });
 
         Self {
             web3: _web3,
@@ -67,9 +100,9 @@ impl Component for EthereumProvider {
         }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::AccountsChanged(accounts) => {
+            Msg::AccountsChanged(_accounts) => {
                 self.connection_status = ConnectionStatus::Connected;
                 true
             }
@@ -84,11 +117,11 @@ impl Component for EthereumProvider {
         }
     }
 
-    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+    fn changed(&mut self, _ctx: &Context<Self>) -> bool {
         true
     }
 
-    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {}
+    fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {}
 
-    fn destroy(&mut self, ctx: &Context<Self>) {}
+    fn destroy(&mut self, _ctx: &Context<Self>) {}
 }
