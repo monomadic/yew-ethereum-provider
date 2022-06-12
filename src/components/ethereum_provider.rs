@@ -1,11 +1,11 @@
 use std::rc::Rc;
-use web3::transports::eip_1193::{Eip1193, Provider};
-use yew::{
-    events::Event, html, Callback, Children, Component, Context, ContextProvider, Html, Properties
+use web3::{
+    transports::eip_1193::{Eip1193, Provider},
+    futures::StreamExt,
 };
-use yew::{function_component, use_state};
-use yew::{html, Children, ContextProvider, Properties};
-
+use yew::{
+    events::Event, html, Callback, Children, Component, Context, ContextProvider, Html, Properties, function_component, use_state
+};
 #[derive(Clone, Debug)]
 pub struct Web3Wrapper(pub web3::Web3<Eip1193>);
 impl PartialEq for Web3Wrapper {
@@ -36,12 +36,9 @@ pub struct AccountState {
 }
 
 
-// type Callback = fn();
 impl AccountState {
     
     pub async fn connect(&self) -> Result<(), web3::Error> {
-        wasm_logger::init(wasm_logger::Config::default());
-        log::info!("connect");
         self.web3.0.eth().request_accounts().await.map(|_| ())
     }
 
@@ -49,8 +46,6 @@ impl AccountState {
     where
         F: Fn(String),
     {
-        wasm_logger::init(wasm_logger::Config::default());
-        log::info!("chain changed");
         let provider = Provider::default().unwrap().unwrap();
         let transport: Eip1193 = Eip1193::new(provider);
 
@@ -64,7 +59,6 @@ impl AccountState {
                 }
             },
             _ => {
-                log::info!("no match");
             },
         }
         
@@ -73,15 +67,11 @@ impl AccountState {
 
 #[function_component(EthereumProvider)]
 pub fn create(props: &Props) -> Html {
-    wasm_logger::init(wasm_logger::Config::default());
-    
     let provider = Provider::default().unwrap().unwrap();
     let transport: Eip1193 = Eip1193::new(provider);
-    // let ts = transport.clone();
+
     let web3 = Web3Wrapper(web3::Web3::new(transport));
 
-    // let mut stream = ts.chain_changed_stream();
-    
     let ctx = use_state(|| {
         Rc::new(AccountState {
             status: ConnectionStatus::default(),
@@ -89,15 +79,6 @@ pub fn create(props: &Props) -> Html {
             accounts: Vec::default(),
         })
     });
-
-    // spawn_local(async move {
-    //     while let Some(chainid) = stream.next().await {
-    //         log::info!("chain changed {:?}", &chainid);
-    //         // callback(chainid.to_string());
-    //     }
-    // });
-
-    
 
     html! {
         <ContextProvider<Rc<AccountState>> context={(*ctx).clone()}>

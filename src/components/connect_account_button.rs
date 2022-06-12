@@ -2,14 +2,7 @@ use super::ethereum_provider::AccountState;
 use std::rc::Rc;
 use yew::prelude::*;
 use yew_hooks::use_async;
-// #[derive(Default)]
-// pub struct ConnectButtonComponent;
-
-pub enum Msg {
-    ClickedConnect,
-    Connected,
-    ChangedChain,
-}
+use wasm_bindgen_futures::spawn_local;
 
 #[function_component(ConnectButtonComponent)]
 pub fn create() -> Html {
@@ -31,19 +24,8 @@ pub fn create() -> Html {
         });
     }
 
-    // let aa = greeting.to_string();
-    // let connect_wallet = Callback::from(move |_| {
-        
-    //     let acc = account.clone();
-
-    //     spawn_local(async move {
-    //         acc.connect().await;
-    //     });
-    // });
     let connect = use_async(async move { account.connect().await });
     let onclick = Callback::from(move |_| connect.run());
-
-    
 
     html! {
         <div>
