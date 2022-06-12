@@ -1,13 +1,10 @@
 use std::rc::Rc;
-
-use wasm_bindgen_futures::spawn_local;
-use web3::futures::StreamExt;
 use web3::transports::eip_1193::{Eip1193, Provider};
-use web3::types::Call;
 use yew::{
     events::Event, html, Callback, Children, Component, Context, ContextProvider, Html, Properties
 };
 use yew::{function_component, use_state};
+use yew::{html, Children, ContextProvider, Properties};
 
 #[derive(Clone, Debug)]
 pub struct Web3Wrapper(pub web3::Web3<Eip1193>);
@@ -24,20 +21,10 @@ pub enum ConnectionStatus {
     Connected,
 }
 
-pub enum Msg {
-    AccountsChanged(Vec<String>),
-}
-
 #[derive(Properties, PartialEq)]
 pub struct Props {
     #[prop_or_default]
     pub children: Children,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct EthereumProviderOld {
-    pub connection_status: ConnectionStatus,
-    pub accounts: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -45,6 +32,7 @@ pub struct AccountState {
     
     pub status: ConnectionStatus,
     pub web3: Web3Wrapper,
+    pub accounts: Vec<String>,
 }
 
 
@@ -98,6 +86,7 @@ pub fn create(props: &Props) -> Html {
         Rc::new(AccountState {
             status: ConnectionStatus::default(),
             web3,
+            accounts: Vec::default(),
         })
     });
 
