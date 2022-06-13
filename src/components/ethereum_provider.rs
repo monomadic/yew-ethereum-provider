@@ -54,6 +54,8 @@ impl AccountState {
             let transport: Eip1193 = Eip1193::new(provider);
             let mut stream = transport.accounts_changed_stream();
 
+            // let mut stream = self.transport.0.accounts_changed_stream();
+
             while let Some(accounts) = stream.next().await {
                 callback(accounts[0].to_string());
             }
@@ -61,6 +63,8 @@ impl AccountState {
             let provider = Provider::default().unwrap().unwrap();
             let transport: Eip1193 = Eip1193::new(provider);
             let mut stream = transport.chain_changed_stream();
+
+            // let mut stream = self.transport.0.chain_changed_stream();
 
             while let Some(chainid) = stream.next().await {
                 callback(chainid.to_string());
@@ -70,16 +74,22 @@ impl AccountState {
             let transport: Eip1193 = Eip1193::new(provider);
             let mut stream = transport.connect_stream();
 
-            while let Some(chainid) = stream.next().await {
-                callback(chainid.unwrap().to_string());
+            // let mut stream = self.transport.0.connect_stream();
+
+            while let Some(connect) = stream.next().await {
+                log::info!("connect provider: ");
+                callback(connect.unwrap().to_string());
             }
         } else if event_name == "disconnect" {
             let provider = Provider::default().unwrap().unwrap();
             let transport: Eip1193 = Eip1193::new(provider);
             let mut stream = transport.disconnect_stream();
 
+            // let mut stream = self.transport.0.disconnect_stream();
+
             while let Some(error) = stream.next().await {
-                log::info!("disconnect {:?}", error);
+                log::info!("disconnect provider: {:?}", error);
+                callback(error.to_string());
             }
         }
         
@@ -103,6 +113,26 @@ impl AccountState {
         }).await;
     }
 
+    pub async fn on_connect<F>(&self, callback: F) 
+    where
+        F: Fn(String),
+    {
+        self.on("connect".to_string(), |connect|{
+            log::info!("connect");
+            callback(connect.to_string());
+        }).await;
+    }
+
+    pub async fn on_disconnect<F>(&self, callback: F) 
+    where
+        F: Fn(String),
+    {
+        self.on("disconnect".to_string(), |error|{
+            log::info!("disconnect");
+            callback(error.to_string());
+        }).await;
+    }
+
     
 }
 
@@ -110,7 +140,6 @@ impl AccountState {
 pub fn create(props: &Props) -> Html {
     let provider = Provider::default().unwrap().unwrap();
     let transport: Eip1193 = Eip1193::new(provider);
-
     let web3 = Web3Wrapper(web3::Web3::new(transport));
 
     let ctx = use_state(|| {
@@ -118,6 +147,7 @@ pub fn create(props: &Props) -> Html {
             status: ConnectionStatus::default(),
             web3,
             accounts: Vec::default(),
+            
         })
     });
 

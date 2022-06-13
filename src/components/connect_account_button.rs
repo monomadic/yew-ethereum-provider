@@ -24,10 +24,9 @@ pub fn create() -> Html {
         let connect = account.connect().await;
 
         let provider_for_chain = account.clone();
-        // chain_id.set(222);
         spawn_local(async move {
 
-            provider_for_chain.on("chainChanged".to_string(), move |chain| {
+            provider_for_chain.on_chain_changed( move |chain| {
                 log::info!("chainChanged");
                 chain_id_clone.set(chain.to_string());
             }).await;
@@ -36,7 +35,7 @@ pub fn create() -> Html {
         let provider_for_accounts = account.clone();
         spawn_local(async move {
             
-            provider_for_accounts.on("accountsChanged".to_string(), move |account_address| {
+            provider_for_accounts.on_account_changed( move |account_address| {
                 log::info!("accountsChanged");
                 address_clone.set(account_address.to_string());
             }).await;
@@ -45,7 +44,7 @@ pub fn create() -> Html {
         let provider_for_connect = account.clone();
         spawn_local(async move {
             
-            provider_for_connect.on("connect".to_string(), move |account_address| {
+            provider_for_connect.on_connect( move |account_address| {
                 connect_state_clone.set(account_address.to_string());
             }).await;
         });
@@ -53,7 +52,7 @@ pub fn create() -> Html {
         let provider_for_disconnect = account.clone();
         spawn_local(async move {
             
-            provider_for_disconnect.on("disconnect".to_string(), move |account_address| {
+            provider_for_disconnect.on_disconnect( move |account_address| {
                 disconnect_state_clone.set(account_address.to_string());
             }).await;
         });
