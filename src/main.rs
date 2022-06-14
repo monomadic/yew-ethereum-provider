@@ -5,6 +5,8 @@ use components::{ConnectButtonComponent, EthereumProvider};
 
 #[function_component(Main)]
 pub fn main() -> Html {
+    wasm_logger::init(wasm_logger::Config::default());
+
     html! {
         <EthereumProvider>
             <ConnectButtonComponent />
