@@ -1,21 +1,28 @@
 use yew::prelude::*;
 
 mod components;
-use components::{ConnectButtonComponent, EthereumProvider};
+use components::*;
 
 mod hooks;
 
-#[function_component(Main)]
-pub fn main() -> Html {
-    wasm_logger::init(wasm_logger::Config::default());
+#[function_component]
+pub fn App() -> Html {
+    // html! {
+    //     <EthereumProvider>
+    //         <ConnectButtonComponent />
+    //     </EthereumProvider>
+    // }
+    //
 
     html! {
-        <EthereumProvider>
-            <ConnectButtonComponent />
-        </EthereumProvider>
+        <div>
+            <ConnectButton />
+        </div>
     }
 }
 
 fn main() {
-    yew::start_app::<Main>();
+    wasm_logger::init(wasm_logger::Config::default());
+    yew::Renderer::<App>::new().render();
+    // yew::start_app::<Main>();
 }
