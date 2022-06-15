@@ -1,4 +1,4 @@
-use web3::transports::eip_1193::Provider;
+use web3::transports::eip_1193::{Eip1193, Provider};
 use yew::prelude::*;
 
 #[derive(Clone)]
@@ -8,9 +8,12 @@ pub struct UseEthereumHandle {
 }
 
 impl UseEthereumHandle {
-    pub fn connect(&self) {
+    pub async fn connect(&self) {
         log::info!("connect()");
-        self.inner.set(UseEthereumState { connected: true });
+        let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
+        if let Ok(_addresses) = web3.eth().request_accounts().await {
+            self.inner.set(UseEthereumState { connected: true });
+        };
     }
 
     pub fn disconnect(&self) {

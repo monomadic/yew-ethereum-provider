@@ -1,5 +1,7 @@
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
+use yew_hooks::prelude::*;
+
 use yew_hooks::use_async;
 
 use crate::hooks::use_ethereum;
@@ -10,7 +12,12 @@ pub fn ConnectButton() -> Html {
 
     let on_connect_clicked = {
         let ethereum = ethereum.clone();
-        Callback::from(move |_| ethereum.connect())
+        Callback::from(move |_| {
+            let ethereum = ethereum.clone();
+            spawn_local(async move {
+                ethereum.connect().await;
+            });
+        })
     };
 
     let on_disconnect_clicked = {
