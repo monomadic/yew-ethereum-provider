@@ -31,7 +31,6 @@ pub fn ConnectButton() -> Html {
         } else {
             <button onclick={on_connect_clicked}>{"Connect"}</button>
         }
-        {&ethereum.connected()}
         </div>
     }
 }

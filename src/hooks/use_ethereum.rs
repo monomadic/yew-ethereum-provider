@@ -1,4 +1,5 @@
 use web3::{
+    futures::StreamExt,
     transports::eip_1193::{Eip1193, Provider},
     types::H160,
 };
@@ -19,6 +20,15 @@ impl UseEthereumHandle {
                 connected: true,
                 addresses: Some(addresses),
             });
+
+            self.on_account_changed(move |addresses| {
+                log::info!("event: accountsChanged");
+                self.inner.set(UseEthereumState {
+                    connected: true,
+                    addresses: Some(addresses),
+                });
+            })
+            .await;
         };
     }
 
@@ -41,6 +51,16 @@ impl UseEthereumHandle {
     pub fn display_address(&self) -> String {
         self.address().map(|a| a.to_string()).unwrap_or_default()
     }
+
+    pub async fn on_account_changed<F>(&self, callback: F)
+    where
+        F: Fn(Vec<web3::types::H160>),
+    {
+        let transport = Eip1193::new(self.provider.clone());
+        while let Some(chainid) = transport.accounts_changed_stream().next().await {
+            callback(chainid);
+        }
+    }
 }
 
 #[derive(Default, Clone)]
@@ -54,7 +74,7 @@ pub fn use_ethereum(default: Option<Provider>) -> UseEthereumHandle {
     let inner = use_state(move || UseEthereumState::default());
 
     UseEthereumHandle {
-        provider: default.unwrap_or(Provider::default().unwrap().unwrap()),
+        provider: default.unwrap_or_else(|| Provider::default().unwrap().unwrap()),
         inner,
     }
 }
