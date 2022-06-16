@@ -23,14 +23,14 @@ pub fn ConnectButton() -> Html {
 
     html! {
         <div>
-        if ethereum.connected() {
-            <button onclick={on_disconnect_clicked}>
-                {"Disconnect "}
-                {ethereum.display_address()}
-            </button>
-        } else {
-            <button onclick={on_connect_clicked}>{"Connect"}</button>
-        }
+            if ethereum.connected() {
+                <button onclick={on_disconnect_clicked}>
+                    {"Disconnect "}
+                    {ethereum.display_address()}
+                </button>
+            } else {
+                <button onclick={on_connect_clicked}>{"Connect"}</button>
+            }
         </div>
     }
 }

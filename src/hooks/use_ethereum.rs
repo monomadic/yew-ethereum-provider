@@ -13,20 +13,6 @@ pub struct UseEthereumHandle {
     chain_id: UseStateHandle<Option<String>>,
 }
 
-// impl Default for UseEthereumHandle {
-//     fn default() -> Self {
-//         let inner = use_state(move || UseEthereumState::default());
-//         let connected = use_state(move || false);
-//
-//         Self {
-//             provider: Provider::default().unwrap().unwrap(),
-//             connected,
-//             addresses: Default::default(),
-//             chain_id: Default::default(),
-//         }
-//     }
-// }
-
 impl UseEthereumHandle {
     pub async fn connect(&self) {
         log::info!("connect()");
