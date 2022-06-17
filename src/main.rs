@@ -9,10 +9,10 @@ mod hooks;
 pub fn App() -> Html {
     html! {
         <div>
-            <EthereumProvider>
+            <EthereumContextProvider>
                 <ConnectButton />
                 <AccountLabel />
-            </EthereumProvider>
+            </EthereumContextProvider>
         </div>
     }
 }
