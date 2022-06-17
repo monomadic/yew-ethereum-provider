@@ -4,13 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-web3 = { version = "0.18.0", default-features = false, features = ["http-rustls-tls", "wasm", "eip-1193"] }
-wasm-bindgen-futures = "0.4.30"
-wasm-bindgen = { version = "0.2.80", features = ["serde-serialize"] }
-#js-sys = "0.3.57"
-#serde = { version = "1.0.136", features = ["derive"] }
 log = "0.4.17"
+wasm-bindgen = { version = "0.2.80", features = ["serde-serialize"] }
+wasm-bindgen-futures = "0.4.30"
 wasm-logger = "0.2.0"
-#yew = "0.19.3"
+web3 = { version = "0.18.0", default-features = false, features = ["http-rustls-tls", "wasm", "eip-1193"] }
 yew = { git = "https://github.com/yewstack/yew", features=["csr"] }
 yew-hooks = "0.1.56"
