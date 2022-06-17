@@ -13,6 +13,14 @@ pub struct UseEthereumHandle {
     chain_id: UseStateHandle<Option<String>>,
 }
 
+impl PartialEq for UseEthereumHandle {
+    fn eq(&self, other: &Self) -> bool {
+        self.connected == other.connected
+            && self.accounts == other.accounts
+            && self.chain_id == other.chain_id
+    }
+}
+
 impl UseEthereumHandle {
     pub async fn connect(&self) {
         log::info!("connect()");
@@ -46,10 +54,7 @@ impl UseEthereumHandle {
 
             self.on_disconnect(move |chain_id| {
                 log::info!("event: disconnect: {}", chain_id);
-                // self.inner.set(UseEthereumState {
-                //     connected: true,
-                //     addresses: Some(addresses),
-                // });
+                self.connected.set(false);
             })
             .await;
         };

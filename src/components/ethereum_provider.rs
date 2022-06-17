@@ -5,15 +5,9 @@ use yew::{function_component, html, use_state, Children, ContextProvider, Html, 
 
 use crate::hooks::use_ethereum;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct EthereumProviderState {
     pub ethereum: UseEthereumHandle,
-}
-
-impl PartialEq for EthereumProviderState {
-    fn eq(&self, other: &Self) -> bool {
-        true
-    }
 }
 
 #[derive(Properties, PartialEq)]
