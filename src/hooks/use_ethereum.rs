@@ -85,12 +85,14 @@ impl UseEthereumHandle {
     pub async fn connect(&self) {
         log::info!("connect()");
         let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
+        
+        let res = Self::switch_chain("0x1".to_string()).await;
+        
         if let Ok(addresses) = web3.eth().request_accounts().await {
             log::info!("request_accounts() {:?}", addresses);
 
             self.connected.set(true);
             self.accounts.set(Some(addresses));
-            Self::switch_chain("ox".to_string()).await;
 
             {
                 let this = self.clone();
@@ -220,7 +222,7 @@ impl UseEthereumHandle {
             method: "wallet_switchEthereumChain".into(),
             params: vec![
                 TransactionParam::SwitchEthereumChainParameter( ChainId {
-                    chainId: "0x1".into(),
+                    chainId: chain_id.into(),
                 }),
             ],
         }).unwrap()).await
