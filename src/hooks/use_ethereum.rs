@@ -5,6 +5,10 @@ use web3::{
 };
 use yew::prelude::*;
 use wasm_bindgen_futures::spawn_local;
+use wasm_bindgen::{JsValue, prelude::*, JsCast};
+use serde::Serialize;
+use js_sys::{JsString, Function};
+
 #[derive(Clone, Debug)]
 pub struct UseEthereumHandle {
     provider: Provider,
@@ -21,6 +25,62 @@ impl PartialEq for UseEthereumHandle {
     }
 }
 
+#[derive(Serialize)]
+pub struct TransactionArgs {
+    pub method: String,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub params: Vec<TransactionParam>,
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum TransactionParam {
+    Params(TransactionCallParams),
+    SwitchEthereumChainParameter(ChainId),
+    Tag(String),
+}
+
+#[derive(Serialize, Default)]
+pub struct ChainId {
+    pub chainId: String,
+    
+}
+
+
+#[derive(Serialize, Default)]
+pub struct TransactionCallParams {
+    // MUST be the currently selected address (or the error 'MetaMask
+    // RPC Error: Invalid parameters: must provide an Ethereum address.' will occur)
+    pub from: String,
+    
+    // required except during contract creation
+    pub to: String,
+    
+    /// (Optional) if present contract interaction or creation is assumed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+
+    /// (Optional) Hex-encoded value of the network's native currency to send
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub block_number: Option<String>,
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+
+    #[wasm_bindgen(catch, js_namespace=["window", "ethereum"], js_name=request)]
+    pub async fn ethereum_request(args: &JsValue) -> Result<JsValue, JsString>;
+
+    #[wasm_bindgen(js_namespace=["window", "ethereum"], js_name=on)]
+    pub fn on(event: &JsString, handler: &Function);
+}
+
 impl UseEthereumHandle {
     pub async fn connect(&self) {
         log::info!("connect()");
@@ -30,6 +90,7 @@ impl UseEthereumHandle {
 
             self.connected.set(true);
             self.accounts.set(Some(addresses));
+            Self::switch_chain("ox".to_string()).await;
 
             {
                 let this = self.clone();
@@ -144,6 +205,25 @@ impl UseEthereumHandle {
         while let Some(err) = stream.next().await {
             callback(err.to_string());
         }
+    }
+
+    /**
+    * EIP-3326: Switch a wallet to another chain
+    * https://eips.ethereum.org/EIPS/eip-3326
+    * https://docs.metamask.io/guide/rpc-api.html#other-rpc-methods
+    *
+    * @param {number} chainId network chain identifier
+    */
+    pub async fn switch_chain(chain_id: String) -> Result<JsValue, JsString> {
+        log::info!("switch_chain");
+        ethereum_request(&JsValue::from_serde(&TransactionArgs {
+            method: "wallet_switchEthereumChain".into(),
+            params: vec![
+                TransactionParam::SwitchEthereumChainParameter( ChainId {
+                    chainId: "0x1".into(),
+                }),
+            ],
+        }).unwrap()).await
     }
 }
 
