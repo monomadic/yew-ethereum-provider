@@ -1,7 +1,7 @@
 use std::ptr::null;
 
 use web3::{
-    futures::StreamExt,
+    futures::{StreamExt, TryFutureExt},
     transports::eip_1193::{Eip1193, Provider},
     types::H160,
 };
@@ -41,6 +41,7 @@ pub enum TransactionParam {
     Params(TransactionCallParams),
     SwitchEthereumChainParameter(ChainId),
     AddEthereumChainParameter(AddChainParams),
+    // WatchAssetParameter (WatchAssetParams),
     Tag(String),
 }
 
@@ -111,9 +112,8 @@ impl UseEthereumHandle {
         log::info!("connect()");
         let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
         
-        let res = Self::switch_chain("0x1".to_string()).await;
-        
-        Self::add_chain("0x1".to_string()).await;
+        Self::add_chain().await;
+        Self::switch_chain("0x38".to_string()).await;
         
         if let Ok(addresses) = web3.eth().request_accounts().await {
             log::info!("request_accounts() {:?}", addresses);
@@ -245,6 +245,7 @@ impl UseEthereumHandle {
     */
     pub async fn switch_chain(chain_id: String) -> Result<JsValue, JsString> {
         log::info!("switch_chain");
+
         ethereum_request(&JsValue::from_serde(&TransactionArgs {
             method: "wallet_switchEthereumChain".into(),
             params: vec![
@@ -261,7 +262,7 @@ impl UseEthereumHandle {
     * https://eips.ethereum.org/EIPS/eip-3085
     * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
     */
-    pub async fn add_chain(chain_id: String) -> Result<JsValue, JsString> {
+    pub async fn add_chain() -> Result<JsValue, JsString> {
         log::info!("add_chain");
         ethereum_request(&JsValue::from_serde(&TransactionArgs {
             method: "wallet_addEthereumChain".into(),
