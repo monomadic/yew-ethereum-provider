@@ -4,6 +4,10 @@ use web3::{
     types::H160,
 };
 use yew::prelude::*;
+use wasm_bindgen_futures::spawn_local;
+use wasm_bindgen::{JsValue, prelude::*, JsCast};
+use serde::Serialize;
+use js_sys::{JsString, Function};
 
 #[derive(Clone, Debug)]
 pub struct UseEthereumHandle {
@@ -21,42 +25,125 @@ impl PartialEq for UseEthereumHandle {
     }
 }
 
+#[derive(Serialize)]
+pub struct TransactionArgs {
+    pub method: String,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub params: Vec<TransactionParam>,
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum TransactionParam {
+    Params(TransactionCallParams),
+    SwitchEthereumChainParameter(ChainId),
+    Tag(String),
+}
+
+#[derive(Serialize, Default)]
+pub struct ChainId {
+    pub chainId: String,
+    
+}
+
+
+#[derive(Serialize, Default)]
+pub struct TransactionCallParams {
+    // MUST be the currently selected address (or the error 'MetaMask
+    // RPC Error: Invalid parameters: must provide an Ethereum address.' will occur)
+    pub from: String,
+    
+    // required except during contract creation
+    pub to: String,
+    
+    /// (Optional) if present contract interaction or creation is assumed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+
+    /// (Optional) Hex-encoded value of the network's native currency to send
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub block_number: Option<String>,
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+
+    #[wasm_bindgen(catch, js_namespace=["window", "ethereum"], js_name=request)]
+    pub async fn ethereum_request(args: &JsValue) -> Result<JsValue, JsString>;
+
+    #[wasm_bindgen(js_namespace=["window", "ethereum"], js_name=on)]
+    pub fn on(event: &JsString, handler: &Function);
+}
+
 impl UseEthereumHandle {
     pub async fn connect(&self) {
         log::info!("connect()");
         let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
+        
+        let res = Self::switch_chain("0x1".to_string()).await;
+        
         if let Ok(addresses) = web3.eth().request_accounts().await {
             log::info!("request_accounts() {:?}", addresses);
 
             self.connected.set(true);
             self.accounts.set(Some(addresses));
 
-            self.on_accounts_changed(move |addresses| {
-                log::info!("event: accountsChanged");
-                if addresses.is_empty() {
-                    self.connected.set(false);
-                }
-                self.accounts.set(Some(addresses));
-            })
-            .await;
+            {
+                let this = self.clone();
+                spawn_local(async move {
+                    let this = this.clone();
+                    this.on_chain_changed(|chain_id| {
+                        // log::info!("event: chainChanged: {}", chain_id);
+                        log::info!("event: chainChanged {:?}", chain_id);
+                        this.chain_id.set(Some(chain_id));
+                    })
+                    .await;
+                });
+            }
 
-            self.on_chain_changed(move |chain_id| {
-                log::info!("event: chainChanged: {}", chain_id);
-                self.chain_id.set(Some(chain_id));
-            })
-            .await;
+            {
+                let this = self.clone();
+                spawn_local(async move {
+                    let this = this.clone();
+                    log::info!("event: accountsChanged before");
+                    this.on_accounts_changed(|addresses| {
+                        log::info!("event: accountsChanged");
+                        if addresses.is_empty() {
+                            this.connected.set(false);
+                        }
+                        this.accounts.set(Some(addresses));
+                    })
+                    .await;
+                });
+            }
 
-            self.on_connect(move |connect| {
-                log::info!("event: connect: {:?}", connect);
-                self.connected.set(true);
-            })
-            .await;
+            {
+                let this = self.clone();
+                spawn_local(async move {
+                    this.on_connect(|connect| {
+                        log::info!("event: connect: {:?}", connect);
+                        this.connected.set(true);
+                    })
+                    .await;
+                });
+            }
 
-            self.on_disconnect(move |chain_id| {
-                log::info!("event: disconnect: {}", chain_id);
-                self.connected.set(false);
-            })
-            .await;
+            {
+                let this = self.clone();
+                spawn_local(async move {
+                    this.on_disconnect(|chain_id| {
+                        log::info!("event: disconnect: {}", chain_id);
+                        this.connected.set(false);
+                    })
+                    .await;
+                });
+            }
         };
     }
 
@@ -82,8 +169,10 @@ impl UseEthereumHandle {
         F: Fn(Vec<web3::types::H160>),
     {
         let transport = Eip1193::new(self.provider.clone());
-        while let Some(accounts) = transport.accounts_changed_stream().next().await {
-            callback(accounts);
+        let mut stream = transport.accounts_changed_stream();
+        while let Some(accounts) = stream.next().await {
+            log::info!("accounts changed");
+            callback(accounts.clone());
         }
     }
 
@@ -92,7 +181,8 @@ impl UseEthereumHandle {
         F: Fn(String),
     {
         let transport = Eip1193::new(self.provider.clone());
-        while let Some(chainid) = transport.chain_changed_stream().next().await {
+        let mut stream = transport.chain_changed_stream();
+        while let Some(chainid) = stream.next().await {
             callback(chainid.to_string());
         }
     }
@@ -102,7 +192,8 @@ impl UseEthereumHandle {
         F: Fn(Option<String>),
     {
         let transport = Eip1193::new(self.provider.clone());
-        while let Some(connect) = transport.connect_stream().next().await {
+        let mut stream = transport.connect_stream();
+        while let Some(connect) = stream.next().await {
             callback(connect);
         }
     }
@@ -112,9 +203,29 @@ impl UseEthereumHandle {
         F: Fn(String),
     {
         let transport = Eip1193::new(self.provider.clone());
-        while let Some(err) = transport.disconnect_stream().next().await {
+        let mut stream = transport.disconnect_stream();
+        while let Some(err) = stream.next().await {
             callback(err.to_string());
         }
+    }
+
+    /**
+    * EIP-3326: Switch a wallet to another chain
+    * https://eips.ethereum.org/EIPS/eip-3326
+    * https://docs.metamask.io/guide/rpc-api.html#other-rpc-methods
+    *
+    * @param {number} chainId network chain identifier
+    */
+    pub async fn switch_chain(chain_id: String) -> Result<JsValue, JsString> {
+        log::info!("switch_chain");
+        ethereum_request(&JsValue::from_serde(&TransactionArgs {
+            method: "wallet_switchEthereumChain".into(),
+            params: vec![
+                TransactionParam::SwitchEthereumChainParameter( ChainId {
+                    chainId: chain_id.into(),
+                }),
+            ],
+        }).unwrap()).await
     }
 }
 
