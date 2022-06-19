@@ -1,3 +1,5 @@
+use std::ptr::null;
+
 use web3::{
     futures::StreamExt,
     transports::eip_1193::{Eip1193, Provider},
@@ -63,12 +65,12 @@ pub struct AddChainParams {
 
     pub chainName: String,
 
-    pub rpcUrls: String,
+    pub rpcUrls: [String;1],
 
     pub nativeCurrency : NativeCurrency,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub blockExplorerUrls: Option<String>,
+    pub blockExplorerUrls: Option<[String; 1]>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub iconUrls: Option<String>,
@@ -113,6 +115,8 @@ impl UseEthereumHandle {
         let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
         
         let res = Self::switch_chain("0x1".to_string()).await;
+        
+        Self::add_chain("0x1".to_string()).await;
         
         if let Ok(addresses) = web3.eth().request_accounts().await {
             log::info!("request_accounts() {:?}", addresses);
@@ -261,14 +265,16 @@ impl UseEthereumHandle {
     * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
     */
     pub async fn add_chain(chain_id: String) -> Result<JsValue, JsString> {
-        log::info!("switch_chain");
+        log::info!("add_chain");
         ethereum_request(&JsValue::from_serde(&TransactionArgs {
             method: "wallet_switchEthereumChain".into(),
             params: vec![
                 TransactionParam::AddEthereumChainParameter( AddChainParams {
-                    chainName: String,
-
-                    rpcUrls: String,
+                    chainId: "56".to_string(),
+                    chainName: "Smart Chain".to_string(),
+                    // nativeCurrency: config.baseCurrency,
+                    rpcUrls: ["https://bsc-dataseed.binance.org/".to_string()],
+                    blockExplorerUrls: Some(["https://bscscan.com/".to_string()]),
                     ..AddChainParams::default()
                 }),
             ],
