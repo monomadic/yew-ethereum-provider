@@ -38,6 +38,7 @@ pub struct TransactionArgs {
 pub enum TransactionParam {
     Params(TransactionCallParams),
     SwitchEthereumChainParameter(ChainId),
+    AddEthereumChainParameter(AddChainParams),
     Tag(String),
 }
 
@@ -47,6 +48,31 @@ pub struct ChainId {
     
 }
 
+#[derive(Serialize, Default)]
+pub struct NativeCurrency {
+    name: String,
+    symbol: String, // 2-6 characters long
+    decimals: u32,
+
+}
+
+#[derive(Serialize, Default)]
+pub struct AddChainParams {
+
+    pub chainId: String,
+
+    pub chainName: String,
+
+    pub rpcUrls: String,
+
+    pub nativeCurrency : NativeCurrency,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blockExplorerUrls: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub iconUrls: Option<String>,
+}
 
 #[derive(Serialize, Default)]
 pub struct TransactionCallParams {
@@ -223,6 +249,27 @@ impl UseEthereumHandle {
             params: vec![
                 TransactionParam::SwitchEthereumChainParameter( ChainId {
                     chainId: chain_id.into(),
+                }),
+            ],
+        }).unwrap()).await
+    }
+
+
+    /**
+    * EIP-3085: Add a wallet to another chain
+    * https://eips.ethereum.org/EIPS/eip-3085
+    * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
+    */
+    pub async fn add_chain(chain_id: String) -> Result<JsValue, JsString> {
+        log::info!("switch_chain");
+        ethereum_request(&JsValue::from_serde(&TransactionArgs {
+            method: "wallet_switchEthereumChain".into(),
+            params: vec![
+                TransactionParam::AddEthereumChainParameter( AddChainParams {
+                    chainName: String,
+
+                    rpcUrls: String,
+                    ..AddChainParams::default()
                 }),
             ],
         }).unwrap()).await
