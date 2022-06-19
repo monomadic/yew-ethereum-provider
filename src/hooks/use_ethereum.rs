@@ -71,9 +71,6 @@ pub struct AddChainParams {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub blockExplorerUrls: Option<[String; 1]>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub iconUrls: Option<String>,
 }
 
 #[derive(Serialize, Default)]
@@ -267,17 +264,21 @@ impl UseEthereumHandle {
     pub async fn add_chain(chain_id: String) -> Result<JsValue, JsString> {
         log::info!("add_chain");
         ethereum_request(&JsValue::from_serde(&TransactionArgs {
-            method: "wallet_switchEthereumChain".into(),
+            method: "wallet_addEthereumChain".into(),
             params: vec![
                 TransactionParam::AddEthereumChainParameter( AddChainParams {
-                    chainId: "56".to_string(),
+                    chainId: "0x38".to_string(),
                     chainName: "Smart Chain".to_string(),
                     // nativeCurrency: config.baseCurrency,
                     rpcUrls: ["https://bsc-dataseed.binance.org/".to_string()],
+                    nativeCurrency: NativeCurrency {
+                        name: "Smart Chain".to_string(),
+                        symbol: "BNB".to_string(), // 2-6 characters long
+                        decimals: 18,
+                    },
                     blockExplorerUrls: Some(["https://bscscan.com/".to_string()]),
-                    ..AddChainParams::default()
                 }),
-            ],
+            ],  
         }).unwrap()).await
     }
 }
