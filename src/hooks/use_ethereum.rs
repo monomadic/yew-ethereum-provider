@@ -108,12 +108,12 @@ extern "C" {
 }
 
 impl UseEthereumHandle {
-    pub async fn connect(&self) {
+    pub async fn connect(&self, chain_id: String) {
         log::info!("connect()");
         let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
         
-        Self::add_chain().await;
-        Self::switch_chain("0x38".to_string()).await;
+        Self::add_chain(chain_id).await;
+        Self::switch_chain(chain_id).await;
         
         if let Ok(addresses) = web3.eth().request_accounts().await {
             log::info!("request_accounts() {:?}", addresses);
@@ -262,13 +262,13 @@ impl UseEthereumHandle {
     * https://eips.ethereum.org/EIPS/eip-3085
     * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
     */
-    pub async fn add_chain() -> Result<JsValue, JsString> {
+    pub async fn add_chain(chain_id: String) -> Result<JsValue, JsString> {
         log::info!("add_chain");
         ethereum_request(&JsValue::from_serde(&TransactionArgs {
             method: "wallet_addEthereumChain".into(),
             params: vec![
                 TransactionParam::AddEthereumChainParameter( AddChainParams {
-                    chainId: "0x38".to_string(),
+                    chainId: chain_id.clone(),
                     chainName: "Smart Chain".to_string(),
                     // nativeCurrency: config.baseCurrency,
                     rpcUrls: ["https://bsc-dataseed.binance.org/".to_string()],
