@@ -10,6 +10,7 @@ pub fn App() -> Html {
     html! {
         <div>
             <EthereumContextProvider>
+                <SwitchNetwork />
                 <ConnectButton />
                 <AccountLabel />
             </EthereumContextProvider>

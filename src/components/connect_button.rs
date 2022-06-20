@@ -14,7 +14,7 @@ pub fn ConnectButton() -> Html {
         Callback::from(move |_| {
             let ethereum = ethereum.clone();
             spawn_local(async move {
-                ethereum.connect("0x38".to_string()).await;
+                ethereum.connect().await;
             });
         })
     };

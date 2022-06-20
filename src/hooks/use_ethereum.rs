@@ -108,12 +108,12 @@ extern "C" {
 }
 
 impl UseEthereumHandle {
-    pub async fn connect(&self, chain_id: String) {
+    pub async fn connect(&self) {
         log::info!("connect()");
         let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
 
-        Self::add_chain(chain_id.clone()).await;
-        Self::switch_chain(chain_id.clone()).await;
+        // Self::add_chain(chain_id.clone()).await;
+        // Self::switch_chain(chain_id.clone()).await;
         
         if let Ok(addresses) = web3.eth().request_accounts().await {
             log::info!("request_accounts() {:?}", addresses);
@@ -243,7 +243,7 @@ impl UseEthereumHandle {
     *
     * @param {number} chainId network chain identifier
     */
-    pub async fn switch_chain(chain_id: String) -> Result<JsValue, JsString> {
+    pub async fn switch_chain(&self, chain_id: String) -> Result<JsValue, JsString> {
         log::info!("switch_chain");
 
         ethereum_request(&JsValue::from_serde(&TransactionArgs {
@@ -262,7 +262,7 @@ impl UseEthereumHandle {
     * https://eips.ethereum.org/EIPS/eip-3085
     * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
     */
-    pub async fn add_chain(chain_id: String) -> Result<JsValue, JsString> {
+    pub async fn add_chain(&self, chain_id: String) -> Result<JsValue, JsString> {
         log::info!("add_chain");
 
         let mut add_chain_param = TransactionParam::AddEthereumChainParameter( AddChainParams {
