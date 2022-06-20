@@ -112,8 +112,8 @@ impl UseEthereumHandle {
         log::info!("connect()");
         let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
         
-        Self::add_chain(chain_id).await;
-        Self::switch_chain(chain_id).await;
+        Self::add_chain(chain_id.clone()).await;
+        Self::switch_chain(chain_id.clone()).await;
         
         if let Ok(addresses) = web3.eth().request_accounts().await {
             log::info!("request_accounts() {:?}", addresses);
