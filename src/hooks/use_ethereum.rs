@@ -41,7 +41,7 @@ pub enum TransactionParam {
     Params(TransactionCallParams),
     SwitchEthereumChainParameter(ChainId),
     AddEthereumChainParameter(AddChainParams),
-    // WatchAssetParameter (WatchAssetParams),
+    WatchAssetParameter (WatchAssetParams),
     Tag(String),
 }
 
@@ -95,6 +95,22 @@ pub struct TransactionCallParams {
     pub block_number: Option<String>,
 }
 
+
+#[derive(Serialize, Default)]
+pub struct WatchAssetParamOption {
+    address: String, // The address of the token contract
+    symbol: String, // A ticker symbol or shorthand, up to 5 characters
+    decimals: u32, // The number of token decimals
+    image: String, // A string url of the token logo
+}
+#[derive(Serialize, Default)]
+pub struct WatchAssetParams {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub option: WatchAssetParamOption
+}
+
+
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
@@ -114,13 +130,13 @@ impl UseEthereumHandle {
 
         // Self::add_chain(chain_id.clone()).await;
         // Self::switch_chain(chain_id.clone()).await;
-        
+        Self::watchToken("aa".to_string(), "bbb".to_string(), "cc".to_string()).await;
         if let Ok(addresses) = web3.eth().request_accounts().await {
             log::info!("request_accounts() {:?}", addresses);
 
             self.connected.set(true);
             self.accounts.set(Some(addresses));
-
+            
             {
                 let this = self.clone();
                 spawn_local(async move {
@@ -303,6 +319,23 @@ impl UseEthereumHandle {
             method: "wallet_addEthereumChain".into(),
             params: vec![
                 add_chain_param
+            ],  
+        }).unwrap()).await
+    }
+
+    pub async fn watchToken(address: String, tokenSymbol: String, imageUrl: String) -> Result<JsValue, JsString> {
+        log::info!("watchToken");
+        ethereum_request(&JsValue::from_serde(&TransactionArgs {
+            method: "wallet_watchAsset".into(),
+            params: vec![
+                TransactionParam::WatchAssetParameter ( WatchAssetParams  {
+                    _type: "ERC20".to_string(),
+                    option: WatchAssetParamOption {
+                        address: "0xe9e7cea3dedca5984780bafc599bd69add087d56".to_string(),
+                        symbol: "BUSD".to_string(),
+                        ..WatchAssetParamOption::default()
+                    }
+                }),
             ],  
         }).unwrap()).await
     }
