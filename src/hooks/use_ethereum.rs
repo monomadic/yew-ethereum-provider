@@ -96,20 +96,18 @@ pub struct TransactionCallParams {
 }
 
 
-#[derive(Serialize, Default)]
+#[derive(Serialize, Default, Debug)]
 pub struct WatchAssetParamOption {
     address: String, // The address of the token contract
     symbol: String, // A ticker symbol or shorthand, up to 5 characters
     decimals: u32, // The number of token decimals
     image: String, // A string url of the token logo
 }
-#[derive(Serialize, Default)]
+#[derive(Serialize, Default, Debug)]
 pub struct WatchAssetParams {
-    #[serde(rename = "type")]
-    pub ty: String,
+    pub r#type: String,
     pub options: WatchAssetParamOption
 }
-
 
 #[wasm_bindgen]
 extern "C" {
@@ -324,15 +322,26 @@ impl UseEthereumHandle {
     }
 
     pub async fn watchToken(address: String, tokenSymbol: String, imageUrl: String) -> Result<JsValue, JsString> {
-        log::info!("watchToken");
+        wasm_logger::init(wasm_logger::Config::default());
+        log::info!("WatchToken {:?}", WatchAssetParams  {
+            r#type: "ERC20".to_string(),
+            options: WatchAssetParamOption {
+                address: "0xb60e8dd61c5d32be8058bb8eb970870f07233155".to_string(),
+                symbol: "FOO".to_string(),
+                decimals: 18,   
+                image: "https://foo.io/token-image.svg".to_string(),
+            }
+        });
         ethereum_request(&JsValue::from_serde(&TransactionArgs {
             method: "wallet_watchAsset".into(),
             params: vec![
                 TransactionParam::WatchAssetParameter ( WatchAssetParams  {
-                    ty: "ERC20".to_string(),
+                    r#type: "ERC20".to_string(),
                     options: WatchAssetParamOption {
-                        address: "0xdac17f958d2ee523a2206206994597c13d831ec7".to_string(),
-                        ..WatchAssetParamOption::default()
+                        address: "0xb60e8dd61c5d32be8058bb8eb970870f07233155".to_string(),
+                        symbol: "FOO".to_string(),
+                        decimals: 18,   
+                        image: "https://foo.io/token-image.svg".to_string(),
                     }
                 }),
             ],  

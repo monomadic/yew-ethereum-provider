@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 js-sys = "0.3.57"
-serde = { version = "1.0.136", features = ["derive"] }
+serde = "1.0.136"
 log = "0.4.17"
 wasm-bindgen = { version = "0.2.80", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.30"
