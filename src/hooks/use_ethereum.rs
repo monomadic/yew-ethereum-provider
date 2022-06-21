@@ -106,8 +106,8 @@ pub struct WatchAssetParamOption {
 #[derive(Serialize, Default)]
 pub struct WatchAssetParams {
     #[serde(rename = "type")]
-    pub _type: String,
-    pub option: WatchAssetParamOption
+    pub ty: String,
+    pub options: WatchAssetParamOption
 }
 
 
@@ -329,10 +329,9 @@ impl UseEthereumHandle {
             method: "wallet_watchAsset".into(),
             params: vec![
                 TransactionParam::WatchAssetParameter ( WatchAssetParams  {
-                    _type: "ERC20".to_string(),
-                    option: WatchAssetParamOption {
-                        address: "0xe9e7cea3dedca5984780bafc599bd69add087d56".to_string(),
-                        symbol: "BUSD".to_string(),
+                    ty: "ERC20".to_string(),
+                    options: WatchAssetParamOption {
+                        address: "0xdac17f958d2ee523a2206206994597c13d831ec7".to_string(),
                         ..WatchAssetParamOption::default()
                     }
                 }),
