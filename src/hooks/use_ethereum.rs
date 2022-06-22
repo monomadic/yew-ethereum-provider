@@ -36,6 +36,12 @@ pub struct TransactionArgs {
 }
 
 #[derive(Serialize)]
+pub struct TransactionArgsNoVec {
+    pub method: String,
+    pub params: TransactionParam,
+}
+
+#[derive(Serialize)]
 #[serde(untagged)]
 pub enum TransactionParam {
     Params(TransactionCallParams),
@@ -126,9 +132,6 @@ impl UseEthereumHandle {
         log::info!("connect()");
         let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
 
-        // Self::add_chain(chain_id.clone()).await;
-        // Self::switch_chain(chain_id.clone()).await;
-        Self::watchToken("aa".to_string(), "bbb".to_string(), "cc".to_string()).await;
         if let Ok(addresses) = web3.eth().request_accounts().await {
             log::info!("request_accounts() {:?}", addresses);
 
@@ -321,31 +324,20 @@ impl UseEthereumHandle {
         }).unwrap()).await
     }
 
-    pub async fn watchToken(address: String, tokenSymbol: String, imageUrl: String) -> Result<JsValue, JsString> {
-        wasm_logger::init(wasm_logger::Config::default());
-        log::info!("WatchToken {:?}", WatchAssetParams  {
-            r#type: "ERC20".to_string(),
-            options: WatchAssetParamOption {
-                address: "0xb60e8dd61c5d32be8058bb8eb970870f07233155".to_string(),
-                symbol: "FOO".to_string(),
-                decimals: 18,   
-                image: "https://foo.io/token-image.svg".to_string(),
-            }
-        });
-        ethereum_request(&JsValue::from_serde(&TransactionArgs {
+    pub async fn watchToken(address: String, tokenSymbol: String, decimals: u32, imageUrl: String) -> Result<JsValue, JsString> {
+        
+        ethereum_request( &JsValue::from_serde(&TransactionArgsNoVec {
             method: "wallet_watchAsset".into(),
-            params: vec![
-                TransactionParam::WatchAssetParameter ( WatchAssetParams  {
-                    r#type: "ERC20".to_string(),
-                    options: WatchAssetParamOption {
-                        address: "0xb60e8dd61c5d32be8058bb8eb970870f07233155".to_string(),
-                        symbol: "FOO".to_string(),
-                        decimals: 18,   
-                        image: "https://foo.io/token-image.svg".to_string(),
-                    }
-                }),
-            ],  
-        }).unwrap()).await
+            params: TransactionParam::WatchAssetParameter ( WatchAssetParams  {
+                r#type: "ERC20".to_string(),
+                options: WatchAssetParamOption {
+                    address: address,
+                    symbol: tokenSymbol,
+                    decimals: decimals,
+                    image: imageUrl,
+                }
+            } ),
+        }).unwrap() ).await
     }
 }
 
