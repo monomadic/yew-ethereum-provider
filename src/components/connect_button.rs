@@ -33,12 +33,12 @@ pub fn ConnectButton(props: &Props) -> Html {
     html! {
         <div>
             if ethereum.connected() {
-                <button onclick={on_disconnect_clicked} disconnected_class={props.disconnected_class.clone()}>
+                <button onclick={on_disconnect_clicked} class={props.disconnected_class.clone()}>
                     {"Disconnect "}
                     {ethereum.display_address()}
                 </button>
             } else {
-                <button onclick={on_connect_clicked} connected_class={props.connected_class.clone()}>{"Connect"}</button>
+                <button onclick={on_connect_clicked} class={props.connected_class.clone()}>{"Connect"}</button>
             }
         </div>
     }
