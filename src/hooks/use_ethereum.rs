@@ -1,13 +1,13 @@
+use js_sys::{Function, JsString};
+use serde::Serialize;
+use wasm_bindgen::{prelude::*, JsValue};
+use wasm_bindgen_futures::spawn_local;
 use web3::{
     futures::StreamExt,
     transports::eip_1193::{Eip1193, Provider},
     types::H160,
 };
 use yew::prelude::*;
-use wasm_bindgen_futures::spawn_local;
-use wasm_bindgen::{JsValue, prelude::*, JsCast};
-use serde::Serialize;
-use js_sys::{JsString, Function};
 
 #[derive(Clone, Debug)]
 pub struct UseEthereumHandle {
@@ -44,19 +44,17 @@ pub enum TransactionParam {
 #[derive(Serialize, Default)]
 pub struct ChainId {
     pub chainId: String,
-    
 }
-
 
 #[derive(Serialize, Default)]
 pub struct TransactionCallParams {
     // MUST be the currently selected address (or the error 'MetaMask
     // RPC Error: Invalid parameters: must provide an Ethereum address.' will occur)
     pub from: String,
-    
+
     // required except during contract creation
     pub to: String,
-    
+
     /// (Optional) if present contract interaction or creation is assumed
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<String>,
@@ -71,9 +69,6 @@ pub struct TransactionCallParams {
 
 #[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-
     #[wasm_bindgen(catch, js_namespace=["window", "ethereum"], js_name=request)]
     pub async fn ethereum_request(args: &JsValue) -> Result<JsValue, JsString>;
 
@@ -85,9 +80,7 @@ impl UseEthereumHandle {
     pub async fn connect(&self) {
         log::info!("connect()");
         let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
-        
-        let res = Self::switch_chain("0x1".to_string()).await;
-        
+
         if let Ok(addresses) = web3.eth().request_accounts().await {
             log::info!("request_accounts() {:?}", addresses);
 
@@ -210,22 +203,24 @@ impl UseEthereumHandle {
     }
 
     /**
-    * EIP-3326: Switch a wallet to another chain
-    * https://eips.ethereum.org/EIPS/eip-3326
-    * https://docs.metamask.io/guide/rpc-api.html#other-rpc-methods
-    *
-    * @param {number} chainId network chain identifier
-    */
+     * EIP-3326: Switch a wallet to another chain
+     * https://eips.ethereum.org/EIPS/eip-3326
+     * https://docs.metamask.io/guide/rpc-api.html#other-rpc-methods
+     *
+     * @param {number} chainId network chain identifier
+     */
     pub async fn switch_chain(chain_id: String) -> Result<JsValue, JsString> {
         log::info!("switch_chain");
-        ethereum_request(&JsValue::from_serde(&TransactionArgs {
-            method: "wallet_switchEthereumChain".into(),
-            params: vec![
-                TransactionParam::SwitchEthereumChainParameter( ChainId {
-                    chainId: chain_id.into(),
-                }),
-            ],
-        }).unwrap()).await
+        ethereum_request(
+            &JsValue::from_serde(&TransactionArgs {
+                method: "wallet_switchEthereumChain".into(),
+                params: vec![TransactionParam::SwitchEthereumChainParameter(ChainId {
+                    chainId: chain_id,
+                })],
+            })
+            .unwrap(),
+        )
+        .await
     }
 }
 
