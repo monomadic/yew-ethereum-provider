@@ -42,8 +42,9 @@ pub enum TransactionParam {
 }
 
 #[derive(Serialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct ChainId {
-    pub chainId: String,
+    pub chain_id: String,
 }
 
 #[derive(Serialize, Default)]
@@ -215,7 +216,7 @@ impl UseEthereumHandle {
             &JsValue::from_serde(&TransactionArgs {
                 method: "wallet_switchEthereumChain".into(),
                 params: vec![TransactionParam::SwitchEthereumChainParameter(ChainId {
-                    chainId: chain_id,
+                    chain_id,
                 })],
             })
             .unwrap(),
