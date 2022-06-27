@@ -88,6 +88,9 @@ impl UseEthereumHandle {
             self.connected.set(true);
             self.accounts.set(Some(addresses));
 
+            let chain_id = web3.eth().chain_id().await.ok().map(|c| c.to_string());
+            self.chain_id.set(chain_id);
+
             {
                 let this = self.clone();
                 spawn_local(async move {
