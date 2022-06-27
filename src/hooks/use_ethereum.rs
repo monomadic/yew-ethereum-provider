@@ -154,6 +154,14 @@ impl UseEthereumHandle {
         self.accounts.as_ref().and_then(|a| a.first())
     }
 
+    /// returns the chain_id as a decimal. returns None on invalid chain values
+    pub fn chain_id(&self) -> Option<i64> {
+        self.chain_id
+            .as_ref()
+            .map(|chain_id| i64::from_str_radix(chain_id.trim_start_matches("0x"), 16).ok())
+            .unwrap_or(None)
+    }
+
     pub fn display_address(&self) -> String {
         self.address().map(|a| a.to_string()).unwrap_or_default()
     }
