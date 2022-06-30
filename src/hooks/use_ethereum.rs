@@ -11,7 +11,7 @@ use yew::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct UseEthereumHandle {
-    provider: Provider,
+    pub provider: Provider,
     connected: UseStateHandle<bool>,
     accounts: UseStateHandle<Option<Vec<H160>>>,
     chain_id: UseStateHandle<Option<String>>,
