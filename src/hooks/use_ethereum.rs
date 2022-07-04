@@ -1,8 +1,6 @@
-use std::ptr::null;
-
 use js_sys::{Function, JsString};
 use serde::Serialize;
-use wasm_bindgen::{prelude::*, JsCast, JsValue};
+use wasm_bindgen::{prelude::*, JsValue};
 use wasm_bindgen_futures::spawn_local;
 use web3::{
     futures::{StreamExt, TryFutureExt},
@@ -13,7 +11,7 @@ use yew::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct UseEthereumHandle {
-    provider: Provider,
+    pub provider: Provider,
     connected: UseStateHandle<bool>,
     accounts: UseStateHandle<Option<Vec<H160>>>,
     chain_id: UseStateHandle<Option<String>>,
@@ -52,7 +50,9 @@ pub enum TransactionParam {
 }
 
 #[derive(Serialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct ChainId {
+
     pub chainId: String,
 }
 
@@ -113,9 +113,6 @@ pub struct WatchAssetParams {
 
 #[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-
     #[wasm_bindgen(catch, js_namespace=["window", "ethereum"], js_name=request)]
     pub async fn ethereum_request(args: &JsValue) -> Result<JsValue, JsString>;
 
@@ -133,6 +130,9 @@ impl UseEthereumHandle {
 
             self.connected.set(true);
             self.accounts.set(Some(addresses));
+
+            let chain_id = web3.eth().chain_id().await.ok().map(|c| c.to_string());
+            self.chain_id.set(chain_id);
 
             {
                 let this = self.clone();
@@ -200,6 +200,14 @@ impl UseEthereumHandle {
         self.accounts.as_ref().and_then(|a| a.first())
     }
 
+    /// returns the chain_id as a decimal. returns None on invalid chain values
+    pub fn chain_id(&self) -> Option<i64> {
+        self.chain_id
+            .as_ref()
+            .map(|chain_id| i64::from_str_radix(chain_id.trim_start_matches("0x"), 16).ok())
+            .unwrap_or(None)
+    }
+
     pub fn display_address(&self) -> String {
         self.address().map(|a| a.to_string()).unwrap_or_default()
     }
@@ -258,6 +266,7 @@ impl UseEthereumHandle {
      */
     pub async fn switch_chain(&self, chain_id: String) -> Result<JsValue, JsString> {
         log::info!("switch_chain");
+
 
         ethereum_request(
             &JsValue::from_serde(&TransactionArgs {

@@ -12,8 +12,8 @@ pub struct Props {
     pub children: Children,
 }
 
-#[function_component(EthereumContextProvider)]
-pub fn create(props: &Props) -> Html {
+#[function_component]
+pub fn EthereumContextProvider(props: &Props) -> Html {
     let ethereum = use_ethereum(None);
 
     html! {

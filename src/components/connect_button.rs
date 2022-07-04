@@ -1,10 +1,16 @@
+use crate::hooks::UseEthereumHandle;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
-use crate::hooks::UseEthereumHandle;
+#[derive(Properties, PartialEq)]
+pub struct Props {
+    #[prop_or_default]
+    pub connected_class: Option<String>,
+    pub disconnected_class: Option<String>,
+}
 
 #[function_component]
-pub fn ConnectButton() -> Html {
+pub fn ConnectButton(props: &Props) -> Html {
     let ethereum = use_context::<UseEthereumHandle>().expect(
         "no ethereum ethereum found. you must wrap your components in an <Ethereumethereum/>",
     );
@@ -27,12 +33,12 @@ pub fn ConnectButton() -> Html {
     html! {
         <div>
             if ethereum.connected() {
-                <button onclick={on_disconnect_clicked}>
+                <button onclick={on_disconnect_clicked} class={props.disconnected_class.clone()}>
                     {"Disconnect "}
                     {ethereum.display_address()}
                 </button>
             } else {
-                <button onclick={on_connect_clicked}>{"Connect"}</button>
+                <button onclick={on_connect_clicked} class={props.connected_class.clone()}>{"Connect"}</button>
             }
         </div>
     }
