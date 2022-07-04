@@ -279,43 +279,16 @@ impl UseEthereumHandle {
     * https://eips.ethereum.org/EIPS/eip-3085
     * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
     */
-    pub async fn add_chain(&self, chain_id: String) -> Result<JsValue, JsString> {
+    pub async fn add_chain(&self, new_chain: AddChainParams) -> Result<JsValue, JsString> {
         log::info!("add_chain");
 
-        let mut add_chain_param = TransactionParam::AddEthereumChainParameter( AddChainParams {
-            ..AddChainParams::default()
-        });
-
-        let chain_id_str = chain_id.as_str();
-
-        match chain_id_str {
-            "0x38" => {
-                add_chain_param = TransactionParam::AddEthereumChainParameter( AddChainParams {
-                    chainId: chain_id.clone(),
-                    chainName: "Smart Chain".to_string(),
-                    rpcUrls: ["https://bsc-dataseed.binance.org/".to_string()],
-                    nativeCurrency: NativeCurrency {
-                        name: "Smart Chain".to_string(),
-                        symbol: "BNB".to_string(), // 2-6 characters long
-                        decimals: 18,
-                    },
-                    blockExplorerUrls: Some(["https://bscscan.com/".to_string()]),
+        let add_chain_param = TransactionParam::AddEthereumChainParameter( AddChainParams {
+                    chainId: new_chain.chainId,
+                    chainName: new_chain.chainName,
+                    rpcUrls: new_chain.rpcUrls,
+                    nativeCurrency: new_chain.nativeCurrency,
+                    blockExplorerUrls: new_chain.blockExplorerUrls,
                 });
-            },
-            _ => {
-                add_chain_param = TransactionParam::AddEthereumChainParameter( AddChainParams {
-                    chainId: "0x1".to_string(),
-                    chainName: "Ethereum Mainnet".to_string(),
-                    rpcUrls: ["https://mainnet.infura.io/v3/".to_string()],
-                    nativeCurrency: NativeCurrency {
-                        name: "Ethereum Mainnet".to_string(),
-                        symbol: "ETH".to_string(), // 2-6 characters long
-                        decimals: 18,
-                    },
-                    blockExplorerUrls: Some(["https://etherscan.io".to_string()]),
-                });
-            }
-        }
         ethereum_request(&JsValue::from_serde(&TransactionArgs {
             method: "wallet_addEthereumChain".into(),
             params: vec![
