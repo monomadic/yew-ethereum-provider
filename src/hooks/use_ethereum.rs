@@ -1,15 +1,15 @@
 use std::ptr::null;
 
+use js_sys::{Function, JsString};
+use serde::Serialize;
+use wasm_bindgen::{prelude::*, JsCast, JsValue};
+use wasm_bindgen_futures::spawn_local;
 use web3::{
     futures::{StreamExt, TryFutureExt},
     transports::eip_1193::{Eip1193, Provider},
     types::H160,
 };
 use yew::prelude::*;
-use wasm_bindgen_futures::spawn_local;
-use wasm_bindgen::{JsValue, prelude::*, JsCast};
-use serde::Serialize;
-use js_sys::{JsString, Function};
 
 #[derive(Clone, Debug)]
 pub struct UseEthereumHandle {
@@ -47,34 +47,31 @@ pub enum TransactionParam {
     Params(TransactionCallParams),
     SwitchEthereumChainParameter(ChainId),
     AddEthereumChainParameter(AddChainParams),
-    WatchAssetParameter (WatchAssetParams),
+    WatchAssetParameter(WatchAssetParams),
     Tag(String),
 }
 
 #[derive(Serialize, Default)]
 pub struct ChainId {
     pub chainId: String,
-    
 }
 
 #[derive(Serialize, Default)]
 pub struct NativeCurrency {
-    pub name: String,
-    pub symbol: String, // 2-6 characters long
-    pub decimals: u32,
-
+    name: String,
+    symbol: String, // 2-6 characters long
+    decimals: u32,
 }
 
 #[derive(Serialize, Default)]
 pub struct AddChainParams {
-
     pub chainId: String,
 
     pub chainName: String,
 
-    pub rpcUrls: [String;1],
+    pub rpcUrls: [String; 1],
 
-    pub nativeCurrency : NativeCurrency,
+    pub nativeCurrency: NativeCurrency,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub blockExplorerUrls: Option<[String; 1]>,
@@ -85,10 +82,10 @@ pub struct TransactionCallParams {
     // MUST be the currently selected address (or the error 'MetaMask
     // RPC Error: Invalid parameters: must provide an Ethereum address.' will occur)
     pub from: String,
-    
+
     // required except during contract creation
     pub to: String,
-    
+
     /// (Optional) if present contract interaction or creation is assumed
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<String>,
@@ -101,18 +98,17 @@ pub struct TransactionCallParams {
     pub block_number: Option<String>,
 }
 
-
 #[derive(Serialize, Default, Debug)]
 pub struct WatchAssetParamOption {
     address: String, // The address of the token contract
-    symbol: String, // A ticker symbol or shorthand, up to 5 characters
-    decimals: u32, // The number of token decimals
-    image: String, // A string url of the token logo
+    symbol: String,  // A ticker symbol or shorthand, up to 5 characters
+    decimals: u32,   // The number of token decimals
+    image: String,   // A string url of the token logo
 }
 #[derive(Serialize, Default, Debug)]
 pub struct WatchAssetParams {
     pub r#type: String,
-    pub options: WatchAssetParamOption
+    pub options: WatchAssetParamOption,
 }
 
 #[wasm_bindgen]
@@ -137,7 +133,7 @@ impl UseEthereumHandle {
 
             self.connected.set(true);
             self.accounts.set(Some(addresses));
-            
+
             {
                 let this = self.clone();
                 spawn_local(async move {
@@ -254,63 +250,87 @@ impl UseEthereumHandle {
     }
 
     /**
-    * EIP-3326: Switch a wallet to another chain
-    * https://eips.ethereum.org/EIPS/eip-3326
-    * https://docs.metamask.io/guide/rpc-api.html#other-rpc-methods
-    *
-    * @param {number} chainId network chain identifier
-    */
+     * EIP-3326: Switch a wallet to another chain
+     * https://eips.ethereum.org/EIPS/eip-3326
+     * https://docs.metamask.io/guide/rpc-api.html#other-rpc-methods
+     *
+     * @param {number} chainId network chain identifier
+     */
     pub async fn switch_chain(&self, chain_id: String) -> Result<JsValue, JsString> {
         log::info!("switch_chain");
 
-        ethereum_request(&JsValue::from_serde(&TransactionArgs {
-            method: "wallet_switchEthereumChain".into(),
-            params: vec![
-                TransactionParam::SwitchEthereumChainParameter( ChainId {
+        ethereum_request(
+            &JsValue::from_serde(&TransactionArgs {
+                method: "wallet_switchEthereumChain".into(),
+                params: vec![TransactionParam::SwitchEthereumChainParameter(ChainId {
                     chainId: chain_id.into(),
-                }),
-            ],
-        }).unwrap()).await
+                })],
+            })
+            .unwrap(),
+        )
+        .await
     }
-
 
     /**
-    * EIP-3085: Add a wallet to another chain
-    * https://eips.ethereum.org/EIPS/eip-3085
-    * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
-    */
-    pub async fn add_chain(&self, new_chain: AddChainParams) -> Result<JsValue, JsString> {
+     * EIP-3085: Add a wallet to another chain
+     * https://eips.ethereum.org/EIPS/eip-3085
+     * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
+     */
+    pub async fn add_chain(
+        &self,
+        chain_id: String,
+        chain_name: String,
+        rpc_urls: [String; 1],
+        currency_name: String,
+        currency_symbol: String,
+        currency_decimals: u32,
+        block_explorer_urls: Option<[String; 1]>,
+    ) -> Result<JsValue, JsString> {
         log::info!("add_chain");
 
-        let add_chain_param = TransactionParam::AddEthereumChainParameter( AddChainParams {
-                    chainId: new_chain.chainId,
-                    chainName: new_chain.chainName,
-                    rpcUrls: new_chain.rpcUrls,
-                    nativeCurrency: new_chain.nativeCurrency,
-                    blockExplorerUrls: new_chain.blockExplorerUrls,
-                });
-        ethereum_request(&JsValue::from_serde(&TransactionArgs {
-            method: "wallet_addEthereumChain".into(),
-            params: vec![
-                add_chain_param
-            ],  
-        }).unwrap()).await
+        let add_chain_param = TransactionParam::AddEthereumChainParameter(AddChainParams {
+            chainId: chain_id,
+            chainName: chain_name,
+            rpcUrls: rpc_urls,
+            nativeCurrency: NativeCurrency {
+                name: currency_name,
+                symbol: currency_symbol, // 2-6 characters long
+                decimals: currency_decimals,
+            },
+            blockExplorerUrls: block_explorer_urls,
+        });
+        ethereum_request(
+            &JsValue::from_serde(&TransactionArgs {
+                method: "wallet_addEthereumChain".into(),
+                params: vec![add_chain_param],
+            })
+            .unwrap(),
+        )
+        .await
     }
 
-    pub async fn watchToken(address: String, tokenSymbol: String, decimals: u32, imageUrl: String) -> Result<JsValue, JsString> {
-        
-        ethereum_request( &JsValue::from_serde(&TransactionArgsNoVec {
-            method: "wallet_watchAsset".into(),
-            params: TransactionParam::WatchAssetParameter ( WatchAssetParams  {
-                r#type: "ERC20".to_string(),
-                options: WatchAssetParamOption {
-                    address: address,
-                    symbol: tokenSymbol,
-                    decimals: decimals,
-                    image: imageUrl,
-                }
-            } ),
-        }).unwrap() ).await
+    pub async fn watchToken(
+        address: String,
+        tokenSymbol: String,
+        decimals: u32,
+        imageUrl: String,
+    ) -> Result<JsValue, JsString> {
+        ethereum_request(
+            &JsValue::from_serde(&TransactionArgsNoVec {
+                method: "wallet_watchAsset".into(),
+                params: TransactionParam::WatchAssetParameter(WatchAssetParams {
+                    r#type: "ERC20".to_string(),
+                    options: WatchAssetParamOption {
+                        address: address,
+                        symbol: tokenSymbol,
+                        decimals: decimals,
+                        image: imageUrl,
+                    },
+                }),
+            })
+            .unwrap(),
+        )
+        .await
     }
 }
 

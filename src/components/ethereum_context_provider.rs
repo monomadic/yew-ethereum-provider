@@ -1,4 +1,4 @@
-use crate::hooks::{use_ethereum, UseEthereumHandle};
+use crate::hooks::{use_ethereum, AddChainParams, NativeCurrency, UseEthereumHandle};
 use yew::{function_component, html, Children, ContextProvider, Html, Properties};
 
 #[derive(Clone, PartialEq)]
