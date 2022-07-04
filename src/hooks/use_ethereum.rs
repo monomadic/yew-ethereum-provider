@@ -59,9 +59,9 @@ pub struct ChainId {
 
 #[derive(Serialize, Default)]
 pub struct NativeCurrency {
-    name: String,
-    symbol: String, // 2-6 characters long
-    decimals: u32,
+    pub name: String,
+    pub symbol: String, // 2-6 characters long
+    pub decimals: u32,
 
 }
 

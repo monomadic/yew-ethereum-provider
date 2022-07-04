@@ -2,7 +2,7 @@ use web_sys::HtmlInputElement;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
-use crate::hooks::UseEthereumHandle;
+use crate::hooks::{UseEthereumHandle, AddChainParams, NativeCurrency};
 
 #[function_component]
 pub fn SwitchNetwork() -> Html {
@@ -18,7 +18,18 @@ pub fn SwitchNetwork() -> Html {
             let ethereum = ethereum.clone();
             
             spawn_local(async move {
-                ethereum.add_chain(select.to_string()).await;
+                let chain_info = AddChainParams {
+                    chainId: "0x38".to_string(),
+                    chainName: "Smart Chain".to_string(),
+                    rpcUrls: ["https://bsc-dataseed.binance.org/".to_string()],
+                    nativeCurrency: NativeCurrency {
+                        name: "Smart Chain".to_string(),
+                        symbol: "BNB".to_string(), // 2-6 characters long
+                        decimals: 18,
+                    },
+                    blockExplorerUrls: Some(["https://bscscan.com/".to_string()]),
+                };
+                ethereum.add_chain(chain_info).await;
                 ethereum.switch_chain(select.to_string()).await;
             });
         })
