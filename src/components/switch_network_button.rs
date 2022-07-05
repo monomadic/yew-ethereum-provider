@@ -23,7 +23,7 @@ pub fn SwitchNetworkButton(props: &Props) -> Html {
             let ethereum = ethereum.clone();
             let chain = chain.clone();
             spawn_local(async move {
-                ethereum.switch_chain_with_fallback(chain).await;
+                let _ = ethereum.switch_chain_with_fallback(chain).await;
             });
         })
     };
