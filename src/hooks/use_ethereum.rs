@@ -3,7 +3,7 @@ use serde::Serialize;
 use wasm_bindgen::{prelude::*, JsValue};
 use wasm_bindgen_futures::spawn_local;
 use web3::{
-    futures::{StreamExt, TryFutureExt},
+    futures::StreamExt,
     transports::eip_1193::{Eip1193, Provider},
     types::H160,
 };
@@ -52,8 +52,7 @@ pub enum TransactionParam {
 #[derive(Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ChainId {
-
-    pub chainId: String,
+    pub chain_id: String,
 }
 
 #[derive(Serialize, Default)]
@@ -64,17 +63,15 @@ pub struct NativeCurrency {
 }
 
 #[derive(Serialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct AddChainParams {
-    pub chainId: String,
-
-    pub chainName: String,
-
-    pub rpcUrls: [String; 1],
-
-    pub nativeCurrency: NativeCurrency,
+    pub chain_id: String,
+    pub chain_name: String,
+    pub rpc_urls: [String; 1],
+    pub native_currency: NativeCurrency,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub blockExplorerUrls: Option<[String; 1]>,
+    pub block_explorer_urls: Option<[String; 1]>,
 }
 
 #[derive(Serialize, Default)]
@@ -267,12 +264,11 @@ impl UseEthereumHandle {
     pub async fn switch_chain(&self, chain_id: String) -> Result<JsValue, JsString> {
         log::info!("switch_chain");
 
-
         ethereum_request(
             &JsValue::from_serde(&TransactionArgs {
                 method: "wallet_switchEthereumChain".into(),
                 params: vec![TransactionParam::SwitchEthereumChainParameter(ChainId {
-                    chainId: chain_id.into(),
+                    chain_id: chain_id.into(),
                 })],
             })
             .unwrap(),
@@ -298,15 +294,15 @@ impl UseEthereumHandle {
         log::info!("add_chain");
 
         let add_chain_param = TransactionParam::AddEthereumChainParameter(AddChainParams {
-            chainId: chain_id,
-            chainName: chain_name,
-            rpcUrls: rpc_urls,
-            nativeCurrency: NativeCurrency {
+            chain_id,
+            chain_name,
+            rpc_urls,
+            native_currency: NativeCurrency {
                 name: currency_name,
                 symbol: currency_symbol, // 2-6 characters long
                 decimals: currency_decimals,
             },
-            blockExplorerUrls: block_explorer_urls,
+            block_explorer_urls,
         });
         ethereum_request(
             &JsValue::from_serde(&TransactionArgs {
@@ -318,11 +314,11 @@ impl UseEthereumHandle {
         .await
     }
 
-    pub async fn watchToken(
+    pub async fn watch_token(
         address: String,
-        tokenSymbol: String,
+        token_symbol: String,
         decimals: u32,
-        imageUrl: String,
+        image_url: String,
     ) -> Result<JsValue, JsString> {
         ethereum_request(
             &JsValue::from_serde(&TransactionArgsNoVec {
@@ -330,10 +326,10 @@ impl UseEthereumHandle {
                 params: TransactionParam::WatchAssetParameter(WatchAssetParams {
                     r#type: "ERC20".to_string(),
                     options: WatchAssetParamOption {
-                        address: address,
-                        symbol: tokenSymbol,
-                        decimals: decimals,
-                        image: imageUrl,
+                        address,
+                        symbol: token_symbol,
+                        decimals,
+                        image: image_url,
                     },
                 }),
             })
