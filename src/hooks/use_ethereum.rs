@@ -9,6 +9,8 @@ use web3::{
 };
 use yew::prelude::*;
 
+use crate::Chain;
+
 #[derive(Clone, Debug)]
 pub struct UseEthereumHandle {
     pub provider: Provider,
@@ -44,7 +46,7 @@ pub struct TransactionArgsNoVec {
 pub enum TransactionParam {
     Params(TransactionCallParams),
     SwitchEthereumChainParameter(ChainId),
-    AddEthereumChainParameter(AddChainParams),
+    AddEthereumChainParameter(Chain),
     WatchAssetParameter(WatchAssetParams),
     Tag(String),
 }
@@ -53,25 +55,6 @@ pub enum TransactionParam {
 #[serde(rename_all = "camelCase")]
 pub struct ChainId {
     pub chain_id: String,
-}
-
-#[derive(Serialize, Default)]
-pub struct NativeCurrency {
-    name: String,
-    symbol: String, // 2-6 characters long
-    decimals: u32,
-}
-
-#[derive(Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct AddChainParams {
-    pub chain_id: String,
-    pub chain_name: String,
-    pub rpc_urls: [String; 1],
-    pub native_currency: NativeCurrency,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub block_explorer_urls: Option<[String; 1]>,
 }
 
 #[derive(Serialize, Default)]
@@ -254,6 +237,20 @@ impl UseEthereumHandle {
         }
     }
 
+    /// switch chain or prompt user to add chain
+    pub async fn switch_chain_with_fallback(&self, chain: Chain) -> Result<JsValue, JsString> {
+        match self.switch_chain(&chain.chain_id).await {
+            Ok(chain) => {
+                log::info!("switched chain ok");
+                Ok(chain)
+            }
+            Err(e) => {
+                log::warn!("switching chains failed: {}", e);
+                self.add_chain(chain).await
+            }
+        }
+    }
+
     /**
      * EIP-3326: Switch a wallet to another chain
      * https://eips.ethereum.org/EIPS/eip-3326
@@ -261,14 +258,14 @@ impl UseEthereumHandle {
      *
      * @param {number} chainId network chain identifier
      */
-    pub async fn switch_chain(&self, chain_id: String) -> Result<JsValue, JsString> {
+    pub async fn switch_chain(&self, chain_id: &str) -> Result<JsValue, JsString> {
         log::info!("switch_chain");
 
         ethereum_request(
             &JsValue::from_serde(&TransactionArgs {
                 method: "wallet_switchEthereumChain".into(),
                 params: vec![TransactionParam::SwitchEthereumChainParameter(ChainId {
-                    chain_id,
+                    chain_id: chain_id.into(),
                 })],
             })
             .unwrap(),
@@ -281,29 +278,10 @@ impl UseEthereumHandle {
      * https://eips.ethereum.org/EIPS/eip-3085
      * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
      */
-    pub async fn add_chain(
-        &self,
-        chain_id: String,
-        chain_name: String,
-        rpc_urls: [String; 1],
-        currency_name: String,
-        currency_symbol: String,
-        currency_decimals: u32,
-        block_explorer_urls: Option<[String; 1]>,
-    ) -> Result<JsValue, JsString> {
+    pub async fn add_chain(&self, chain: Chain) -> Result<JsValue, JsString> {
         log::info!("add_chain");
 
-        let add_chain_param = TransactionParam::AddEthereumChainParameter(AddChainParams {
-            chain_id,
-            chain_name,
-            rpc_urls,
-            native_currency: NativeCurrency {
-                name: currency_name,
-                symbol: currency_symbol, // 2-6 characters long
-                decimals: currency_decimals,
-            },
-            block_explorer_urls,
-        });
+        let add_chain_param = TransactionParam::AddEthereumChainParameter(chain);
         ethereum_request(
             &JsValue::from_serde(&TransactionArgs {
                 method: "wallet_addEthereumChain".into(),

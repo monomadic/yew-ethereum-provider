@@ -1,5 +1,7 @@
 use yew::prelude::*;
-use yew_ethereum_provider::{AccountLabel, ConnectButton, EthereumContextProvider, SwitchNetwork};
+use yew_ethereum_provider::{
+    AccountLabel, Chain, ConnectButton, EthereumContextProvider, SwitchNetwork, SwitchNetworkButton,
+};
 
 #[function_component]
 pub fn App() -> Html {
@@ -8,6 +10,8 @@ pub fn App() -> Html {
             <EthereumContextProvider>
                 <SwitchNetwork />
                 <ConnectButton />
+                <SwitchNetworkButton chain={Chain::ethereum()}/>
+                <SwitchNetworkButton chain={Chain::avalanche_testnet()}/>
                 <AccountLabel />
             </EthereumContextProvider>
         </div>

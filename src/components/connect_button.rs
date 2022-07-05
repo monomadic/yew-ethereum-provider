@@ -30,6 +30,7 @@ pub fn ConnectButton(props: &Props) -> Html {
         Callback::from(move |_| ethereum.disconnect())
     };
 
+    let ethereum = ethereum.clone();
     html! {
         <div>
             if ethereum.connected() {
