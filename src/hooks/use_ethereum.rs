@@ -268,7 +268,7 @@ impl UseEthereumHandle {
             &JsValue::from_serde(&TransactionArgs {
                 method: "wallet_switchEthereumChain".into(),
                 params: vec![TransactionParam::SwitchEthereumChainParameter(ChainId {
-                    chain_id: chain_id.into(),
+                    chain_id,
                 })],
             })
             .unwrap(),
