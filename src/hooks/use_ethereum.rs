@@ -94,7 +94,7 @@ pub struct WatchAssetParams {
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(catch, js_namespace=["window", "ethereum"], js_name=request)]
-    pub async fn ethereum_request(args: &JsValue) -> Result<JsValue, JsString>;
+    pub async fn ethereum_request(args: &JsValue) -> Result<JsValue, JsValue>;
 
     #[wasm_bindgen(js_namespace=["window", "ethereum"], js_name=on)]
     pub fn on(event: &JsString, handler: &Function);
@@ -238,14 +238,14 @@ impl UseEthereumHandle {
     }
 
     /// switch chain or prompt user to add chain
-    pub async fn switch_chain_with_fallback(&self, chain: Chain) -> Result<JsValue, JsString> {
+    pub async fn switch_chain_with_fallback(&self, chain: Chain) -> Result<JsValue, JsValue> {
         match self.switch_chain(&chain.chain_id).await {
             Ok(chain) => {
                 log::info!("switched chain ok");
                 Ok(chain)
             }
             Err(e) => {
-                log::warn!("switching chains failed: {}", e);
+                log::warn!("switching chains failed: {}", JsString::from(e));
                 self.add_chain(chain).await
             }
         }
@@ -258,7 +258,7 @@ impl UseEthereumHandle {
      *
      * @param {number} chainId network chain identifier
      */
-    pub async fn switch_chain(&self, chain_id: &str) -> Result<JsValue, JsString> {
+    pub async fn switch_chain(&self, chain_id: &str) -> Result<JsValue, JsValue> {
         log::info!("switch_chain");
 
         ethereum_request(
@@ -278,7 +278,7 @@ impl UseEthereumHandle {
      * https://eips.ethereum.org/EIPS/eip-3085
      * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
      */
-    pub async fn add_chain(&self, chain: Chain) -> Result<JsValue, JsString> {
+    pub async fn add_chain(&self, chain: Chain) -> Result<JsValue, JsValue> {
         log::info!("add_chain");
 
         let add_chain_param = TransactionParam::AddEthereumChainParameter(chain);
@@ -297,7 +297,7 @@ impl UseEthereumHandle {
         token_symbol: String,
         decimals: u32,
         image_url: String,
-    ) -> Result<JsValue, JsString> {
+    ) -> Result<JsValue, JsValue> {
         ethereum_request(
             &JsValue::from_serde(&TransactionArgsNoVec {
                 method: "wallet_watchAsset".into(),
