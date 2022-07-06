@@ -96,6 +96,9 @@ extern "C" {
     #[wasm_bindgen(catch, js_namespace=["window", "ethereum"], js_name=request)]
     pub async fn ethereum_request(args: &JsValue) -> Result<JsValue, JsString>;
 
+    #[wasm_bindgen(catch, js_namespace=["window", "ethereum"], js_name=request)]
+    pub async fn ethereum_request_switch_network(args: &JsValue) -> Result<JsValue, JsValue>;
+
     #[wasm_bindgen(js_namespace=["window", "ethereum"], js_name=on)]
     pub fn on(event: &JsString, handler: &Function);
 }
@@ -244,8 +247,8 @@ impl UseEthereumHandle {
                 log::info!("switched chain ok");
                 Ok(chain)
             }
-            Err(e) => {
-                log::warn!("switching chains failed: {}", e);
+            Err(_e) => {
+                log::warn!("switching chains failed");
                 self.add_chain(chain).await
             }
         }
@@ -258,10 +261,10 @@ impl UseEthereumHandle {
      *
      * @param {number} chainId network chain identifier
      */
-    pub async fn switch_chain(&self, chain_id: &str) -> Result<JsValue, JsString> {
+    pub async fn switch_chain(&self, chain_id: &str) -> Result<JsValue, JsValue> {
         log::info!("switch_chain");
 
-        ethereum_request(
+        ethereum_request_switch_network(
             &JsValue::from_serde(&TransactionArgs {
                 method: "wallet_switchEthereumChain".into(),
                 params: vec![TransactionParam::SwitchEthereumChainParameter(ChainId {
@@ -287,7 +290,7 @@ impl UseEthereumHandle {
                 method: "wallet_addEthereumChain".into(),
                 params: vec![add_chain_param],
             })
-            .unwrap(),
+            .expect("Failed"),
         )
         .await
     }
