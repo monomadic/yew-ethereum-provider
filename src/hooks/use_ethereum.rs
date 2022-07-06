@@ -268,7 +268,7 @@ impl UseEthereumHandle {
                     chain_id: chain_id.into(),
                 })],
             })
-            .unwrap(),
+            .map_err(|_| JsValue::from("error deserializing request params"))?,
         )
         .await
     }
@@ -287,7 +287,7 @@ impl UseEthereumHandle {
                 method: "wallet_addEthereumChain".into(),
                 params: vec![add_chain_param],
             })
-            .unwrap(),
+            .map_err(|_| JsValue::from("error deserializing request params"))?,
         )
         .await
     }
@@ -311,7 +311,7 @@ impl UseEthereumHandle {
                     },
                 }),
             })
-            .unwrap(),
+            .map_err(|_| JsValue::from("error deserializing request params"))?,
         )
         .await
     }
