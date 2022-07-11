@@ -1,5 +1,6 @@
-use crate::{hooks::UseEthereumHandle, Chain};
+use crate::hooks::UseEthereumHandle;
 use wasm_bindgen_futures::spawn_local;
+use web3::transports::eip_1193::Chain;
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
@@ -23,7 +24,8 @@ pub fn SwitchNetworkButton(props: &Props) -> Html {
             let ethereum = ethereum.clone();
             let chain = chain.clone();
             spawn_local(async move {
-                let _ = ethereum.switch_chain_with_fallback(chain).await;
+                //let _ = ethereum.switch_chain_with_fallback(chain).await;
+                let _ = ethereum.switch_chain_with_fallback(&chain).await;
             });
         })
     };

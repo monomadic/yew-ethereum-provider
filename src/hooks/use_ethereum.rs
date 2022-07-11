@@ -4,12 +4,10 @@ use wasm_bindgen::{prelude::*, JsValue};
 use wasm_bindgen_futures::spawn_local;
 use web3::{
     futures::StreamExt,
-    transports::eip_1193::{Eip1193, Provider},
+    transports::eip_1193::{Chain, Eip1193, Provider},
     types::H160,
 };
 use yew::prelude::*;
-
-use crate::Chain;
 
 #[derive(Clone, Debug)]
 pub struct UseEthereumHandle {
@@ -119,7 +117,6 @@ impl UseEthereumHandle {
                 spawn_local(async move {
                     let this = this.clone();
                     this.on_chain_changed(|chain_id| {
-                        // log::info!("event: chainChanged: {}", chain_id);
                         log::info!("event: chainChanged {:?}", chain_id);
                         this.chain_id.set(Some(chain_id));
                     })
@@ -238,11 +235,11 @@ impl UseEthereumHandle {
     }
 
     /// switch chain or prompt user to add chain
-    pub async fn switch_chain_with_fallback(&self, chain: Chain) -> Result<JsValue, JsValue> {
+    pub async fn switch_chain_with_fallback(&self, chain: &Chain) -> Result<(), JsValue> {
         match self.switch_chain(&chain.chain_id).await {
             Ok(chain) => {
                 log::info!("switched chain ok");
-                Ok(chain)
+                Ok(())
             }
             Err(e) => {
                 log::warn!("switching chains failed: {}", JsString::from(e));
@@ -260,17 +257,23 @@ impl UseEthereumHandle {
      */
     pub async fn switch_chain(&self, chain_id: &str) -> Result<JsValue, JsValue> {
         log::info!("switch_chain");
+        let transport = Eip1193::new(self.provider.clone());
+        transport
+            .switch_chain(chain_id)
+            .await
+            .map(|_| JsValue::from(chain_id))
+            .map_err(|_| JsValue::from("error deserializing request params"))
 
-        ethereum_request(
-            &JsValue::from_serde(&TransactionArgs {
-                method: "wallet_switchEthereumChain".into(),
-                params: vec![TransactionParam::SwitchEthereumChainParameter(ChainId {
-                    chain_id: chain_id.into(),
-                })],
-            })
-            .map_err(|_| JsValue::from("error deserializing request params"))?,
-        )
-        .await
+        // ethereum_request(
+        //     &JsValue::from_serde(&TransactionArgs {
+        //         method: "wallet_switchEthereumChain".into(),
+        //         params: vec![TransactionParam::SwitchEthereumChainParameter(ChainId {
+        //             chain_id: chain_id.into(),
+        //         })],
+        //     })
+        //     .map_err(|_| JsValue::from("error deserializing request params"))?,
+        // )
+        // .await
     }
 
     /**
@@ -278,18 +281,25 @@ impl UseEthereumHandle {
      * https://eips.ethereum.org/EIPS/eip-3085
      * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
      */
-    pub async fn add_chain(&self, chain: Chain) -> Result<JsValue, JsValue> {
+    pub async fn add_chain(&self, chain: &Chain) -> Result<(), JsValue> {
         log::info!("add_chain");
 
-        let add_chain_param = TransactionParam::AddEthereumChainParameter(chain);
-        ethereum_request(
-            &JsValue::from_serde(&TransactionArgs {
-                method: "wallet_addEthereumChain".into(),
-                params: vec![add_chain_param],
-            })
-            .map_err(|_| JsValue::from("error deserializing request params"))?,
-        )
-        .await
+        let transport = Eip1193::new(self.provider.clone());
+        transport
+            .add_chain(chain)
+            .await
+            .map(|_| ())
+            .map_err(|_| JsValue::from("error deserializing request params"))
+
+        // let add_chain_param = TransactionParam::AddEthereumChainParameter(chain);
+        // ethereum_request(
+        //     &JsValue::from_serde(&TransactionArgs {
+        //         method: "wallet_addEthereumChain".into(),
+        //         params: vec![add_chain_param],
+        //     })
+        //     .map_err(|_| JsValue::from("error deserializing request params"))?,
+        // )
+        // .await
     }
 
     pub async fn watch_token(

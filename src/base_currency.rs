@@ -1,26 +1,17 @@
-use serde::Serialize;
+use web3::transports::eip_1193::BaseCurrency;
 
-#[derive(Serialize, Default, PartialEq, Clone)]
-pub struct BaseCurrency {
-    name: String,
-    symbol: String, // 2-6 characters long
-    decimals: u32,
+pub fn eth() -> BaseCurrency {
+    BaseCurrency {
+        name: String::from("Ether"),
+        symbol: String::from("ETH"),
+        decimals: 18,
+    }
 }
 
-impl BaseCurrency {
-    pub fn eth() -> Self {
-        Self {
-            name: String::from("Ether"),
-            symbol: String::from("ETH"),
-            decimals: 18,
-        }
-    }
-
-    pub fn avax() -> Self {
-        Self {
-            name: String::from("AVAX"),
-            symbol: String::from("AVAX"),
-            decimals: 18,
-        }
+pub fn avax() -> BaseCurrency {
+    BaseCurrency {
+        name: String::from("AVAX"),
+        symbol: String::from("AVAX"),
+        decimals: 18,
     }
 }
