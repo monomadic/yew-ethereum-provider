@@ -1,10 +1,9 @@
-use js_sys::{Function, JsString};
-use serde::Serialize;
-use wasm_bindgen::{prelude::*, JsValue};
+use js_sys::JsString;
+use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::spawn_local;
 use web3::{
     futures::StreamExt,
-    transports::eip_1193::{Chain, Eip1193, Provider},
+    transports::eip_1193::{Chain, ERC20Asset, Eip1193, Provider},
     types::H160,
 };
 use yew::prelude::*;
@@ -23,79 +22,6 @@ impl PartialEq for UseEthereumHandle {
             && self.accounts == other.accounts
             && self.chain_id == other.chain_id
     }
-}
-
-#[derive(Serialize)]
-pub struct TransactionArgs {
-    pub method: String,
-
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub params: Vec<TransactionParam>,
-}
-
-#[derive(Serialize)]
-pub struct TransactionArgsNoVec {
-    pub method: String,
-    pub params: TransactionParam,
-}
-
-#[derive(Serialize)]
-#[serde(untagged)]
-pub enum TransactionParam {
-    Params(TransactionCallParams),
-    SwitchEthereumChainParameter(ChainId),
-    AddEthereumChainParameter(Chain),
-    WatchAssetParameter(WatchAssetParams),
-    Tag(String),
-}
-
-#[derive(Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ChainId {
-    pub chain_id: String,
-}
-
-#[derive(Serialize, Default)]
-pub struct TransactionCallParams {
-    // MUST be the currently selected address (or the error 'MetaMask
-    // RPC Error: Invalid parameters: must provide an Ethereum address.' will occur)
-    pub from: String,
-
-    // required except during contract creation
-    pub to: String,
-
-    /// (Optional) if present contract interaction or creation is assumed
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<String>,
-
-    /// (Optional) Hex-encoded value of the network's native currency to send
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub value: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub block_number: Option<String>,
-}
-
-#[derive(Serialize, Default, Debug)]
-pub struct WatchAssetParamOption {
-    address: String, // The address of the token contract
-    symbol: String,  // A ticker symbol or shorthand, up to 5 characters
-    decimals: u32,   // The number of token decimals
-    image: String,   // A string url of the token logo
-}
-#[derive(Serialize, Default, Debug)]
-pub struct WatchAssetParams {
-    pub r#type: String,
-    pub options: WatchAssetParamOption,
-}
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(catch, js_namespace=["window", "ethereum"], js_name=request)]
-    pub async fn ethereum_request(args: &JsValue) -> Result<JsValue, JsValue>;
-
-    #[wasm_bindgen(js_namespace=["window", "ethereum"], js_name=on)]
-    pub fn on(event: &JsString, handler: &Function);
 }
 
 impl UseEthereumHandle {
@@ -237,7 +163,7 @@ impl UseEthereumHandle {
     /// switch chain or prompt user to add chain
     pub async fn switch_chain_with_fallback(&self, chain: &Chain) -> Result<(), JsValue> {
         match self.switch_chain(&chain.chain_id).await {
-            Ok(chain) => {
+            Ok(_) => {
                 log::info!("switched chain ok");
                 Ok(())
             }
@@ -263,24 +189,11 @@ impl UseEthereumHandle {
             .await
             .map(|_| JsValue::from(chain_id))
             .map_err(|_| JsValue::from("error deserializing request params"))
-
-        // ethereum_request(
-        //     &JsValue::from_serde(&TransactionArgs {
-        //         method: "wallet_switchEthereumChain".into(),
-        //         params: vec![TransactionParam::SwitchEthereumChainParameter(ChainId {
-        //             chain_id: chain_id.into(),
-        //         })],
-        //     })
-        //     .map_err(|_| JsValue::from("error deserializing request params"))?,
-        // )
-        // .await
     }
 
-    /**
-     * EIP-3085: Add a wallet to another chain
-     * https://eips.ethereum.org/EIPS/eip-3085
-     * https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
-     */
+    /// EIP-3085: Add a wallet to another chain
+    /// - https://eips.ethereum.org/EIPS/eip-3085
+    /// - https://docs.metamask.io/guide/rpc-api.html#wallet-addethereumchain
     pub async fn add_chain(&self, chain: &Chain) -> Result<(), JsValue> {
         log::info!("add_chain");
 
@@ -290,40 +203,17 @@ impl UseEthereumHandle {
             .await
             .map(|_| ())
             .map_err(|_| JsValue::from("error deserializing request params"))
-
-        // let add_chain_param = TransactionParam::AddEthereumChainParameter(chain);
-        // ethereum_request(
-        //     &JsValue::from_serde(&TransactionArgs {
-        //         method: "wallet_addEthereumChain".into(),
-        //         params: vec![add_chain_param],
-        //     })
-        //     .map_err(|_| JsValue::from("error deserializing request params"))?,
-        // )
-        // .await
     }
 
-    pub async fn watch_token(
-        address: String,
-        token_symbol: String,
-        decimals: u32,
-        image_url: String,
-    ) -> Result<JsValue, JsValue> {
-        ethereum_request(
-            &JsValue::from_serde(&TransactionArgsNoVec {
-                method: "wallet_watchAsset".into(),
-                params: TransactionParam::WatchAssetParameter(WatchAssetParams {
-                    r#type: "ERC20".to_string(),
-                    options: WatchAssetParamOption {
-                        address,
-                        symbol: token_symbol,
-                        decimals,
-                        image: image_url,
-                    },
-                }),
-            })
-            .map_err(|_| JsValue::from("error deserializing request params"))?,
-        )
-        .await
+    pub async fn watch_asset(&self, asset: &ERC20Asset) -> Result<(), JsValue> {
+        log::info!("add_chain");
+
+        let transport = Eip1193::new(self.provider.clone());
+        transport
+            .watch_asset(asset)
+            .await
+            .map(|_| ())
+            .map_err(|_| JsValue::from("error deserializing request params"))
     }
 }
 
