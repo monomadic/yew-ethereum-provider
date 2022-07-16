@@ -25,7 +25,7 @@ impl PartialEq for UseEthereumHandle {
 }
 
 impl UseEthereumHandle {
-    pub async fn connect(&self) {
+    pub async fn connect(&self) -> Result<(), String> {
         log::info!("connect()");
         let web3 = web3::Web3::new(Eip1193::new(self.provider.clone()));
 
@@ -88,6 +88,7 @@ impl UseEthereumHandle {
                 });
             }
         };
+        Ok(())
     }
 
     pub fn disconnect(&self) {

@@ -1,12 +1,12 @@
 use crate::hooks::UseEthereumHandle;
-use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
+use yew_hooks::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
     #[prop_or_default]
-    pub connected_class: Option<String>,
-    pub disconnected_class: Option<String>,
+    pub children: Children,
+    pub disconnected: Option<Html>,
 }
 
 #[function_component]
@@ -15,31 +15,32 @@ pub fn ConnectButton(props: &Props) -> Html {
         "no ethereum ethereum found. you must wrap your components in an <Ethereumethereum/>",
     );
 
-    let on_connect_clicked = {
+    let connect = {
         let ethereum = ethereum.clone();
-        Callback::from(move |_| {
-            let ethereum = ethereum.clone();
-            spawn_local(async move {
-                ethereum.connect().await;
-            });
-        })
+        use_async(async move { ethereum.connect().await })
     };
 
-    let on_disconnect_clicked = {
+    let disconnect = {
         let ethereum = ethereum.clone();
         Callback::from(move |_| ethereum.disconnect())
     };
 
-    let ethereum = ethereum.clone();
+    let disconnected_html = props.disconnected.clone().unwrap_or_else(|| {
+        html! {
+            <button>{"Disconnect"}</button>
+        }
+    });
+
     html! {
         <div>
             if ethereum.connected() {
-                <button onclick={on_disconnect_clicked} class={props.disconnected_class.clone()}>
-                    {"Disconnect "}
-                    {ethereum.display_address()}
-                </button>
+                <div onclick={disconnect}>
+                    {disconnected_html}
+                </div>
             } else {
-                <button onclick={on_connect_clicked} class={props.connected_class.clone()}>{"Connect"}</button>
+                <div onclick={ Callback::from(move |_| connect.run()) }>
+                    { for props.children.iter() }
+                </div>
             }
         </div>
     }
