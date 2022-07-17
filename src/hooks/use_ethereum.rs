@@ -1,12 +1,10 @@
-use js_sys::JsString;
 use wasm_bindgen::JsValue;
-use wasm_bindgen_futures::spawn_local;
 use web3::{
     futures::StreamExt,
     transports::eip_1193::{Chain, ERC20Asset, Eip1193, Provider},
     types::H160,
 };
-use yew::prelude::*;
+use yew::{platform::spawn_local, prelude::*};
 
 #[derive(Clone, Debug)]
 pub struct UseEthereumHandle {
@@ -112,8 +110,14 @@ impl UseEthereumHandle {
             .unwrap_or(None)
     }
 
-    pub fn display_address(&self) -> String {
+    pub fn display_short_address(&self) -> String {
         self.address().map(|a| a.to_string()).unwrap_or_default()
+    }
+
+    pub fn display_address(&self) -> String {
+        self.address()
+            .map(|add| format!("{:?}", add))
+            .expect("could not display address")
     }
 
     pub async fn on_accounts_changed<F>(&self, callback: F)
@@ -162,17 +166,14 @@ impl UseEthereumHandle {
     }
 
     /// switch chain or prompt user to add chain
+    ///
+    /// # Arguments
+    /// * `chain` - a `Chain` instance representing the target chain
+    ///
     pub async fn switch_chain_with_fallback(&self, chain: &Chain) -> Result<(), JsValue> {
-        match self.switch_chain(&chain.chain_id).await {
-            Ok(_) => {
-                log::info!("switched chain ok");
-                Ok(())
-            }
-            Err(e) => {
-                log::warn!("switching chains failed: {}", JsString::from(e));
-                self.add_chain(chain).await
-            }
-        }
+        self.add_chain(chain).await?;
+        self.switch_chain(&chain.chain_id).await?;
+        Ok(())
     }
 
     /**

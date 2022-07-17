@@ -14,7 +14,7 @@ pub fn App() -> Html {
         <div>
             <EthereumContextProvider>
                 <ConnectButton {disconnected}>
-                    <button>{ "Connect" }</button>
+                    <button>{"Connect"}</button>
                 </ConnectButton>
                 <SwitchNetworkButton chain={chain::ethereum()}/>
                 <SwitchNetworkButton chain={chain::avalanche_testnet()}/>
