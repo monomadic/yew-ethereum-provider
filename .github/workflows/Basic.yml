@@ -24,7 +24,7 @@ jobs:
       - name: Run unit tests
         uses: actions-rs/cargo@v1
         with:
-          command: unit-test
+          command: test
           args: --locked
         env:
           RUST_BACKTRACE: 1
@@ -36,13 +36,6 @@ jobs:
           args: --locked
         env:
           RUSTFLAGS: "-C link-arg=-s"
-
-      - name: Run integration tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: integration-test
-          args: --locked
-
 
   lints:
     name: Lints
@@ -70,12 +63,3 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
-
-      # TODO: we should check
-      # CHANGES_IN_REPO=$(git status --porcelain)
-      # after this, but I don't know how
-      - name: Generate Schema
-        uses: actions-rs/cargo@v1
-        with:
-          command: schema
-          args: --locked
