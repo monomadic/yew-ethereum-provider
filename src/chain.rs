@@ -1,5 +1,6 @@
-use crate::base_currency;
 use web3::transports::eip_1193::Chain;
+
+use crate::base_currency;
 
 pub fn ethereum() -> Chain {
     Chain {
