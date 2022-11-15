@@ -2,7 +2,7 @@ use wasm_bindgen::JsValue;
 use web3::{
     futures::StreamExt,
     transports::eip_1193::{Chain, ERC20Asset, Eip1193, Provider},
-    types::H160,
+    types::{H160, U256},
 };
 use yew::{platform::spawn_local, prelude::*};
 
@@ -11,7 +11,7 @@ pub struct UseEthereumHandle {
     pub provider: Provider,
     connected: UseStateHandle<bool>,
     accounts: UseStateHandle<Option<Vec<H160>>>,
-    chain_id: UseStateHandle<Option<String>>,
+    chain_id: UseStateHandle<Option<U256>>,
 }
 
 impl PartialEq for UseEthereumHandle {
@@ -33,16 +33,19 @@ impl UseEthereumHandle {
             self.connected.set(true);
             self.accounts.set(Some(addresses));
 
-            let chain_id = web3.eth().chain_id().await.ok().map(|c| c.to_string());
-            self.chain_id.set(chain_id);
+            self.chain_id.set(web3.eth().chain_id().await.ok());
 
             {
                 let this = self.clone();
                 spawn_local(async move {
                     let this = this.clone();
                     this.on_chain_changed(|chain_id| {
+                        // chain_id is a decimal string
                         log::info!("event: chainChanged {:?}", chain_id);
-                        this.chain_id.set(Some(chain_id));
+                        this.chain_id.set(Some(
+                            U256::from_dec_str(&chain_id)
+                                .expect(&format!("chain_id should be a valid U256 {}", &chain_id)),
+                        ));
                     })
                     .await;
                 });
@@ -75,16 +78,16 @@ impl UseEthereumHandle {
                 });
             }
 
-            {
-                let this = self.clone();
-                spawn_local(async move {
-                    this.on_disconnect(|chain_id| {
-                        log::info!("event: disconnect: {}", chain_id);
-                        this.connected.set(false);
-                    })
-                    .await;
-                });
-            }
+            // {
+            //     let this = self.clone();
+            //     spawn_local(async move {
+            //         this.on_disconnect(|chain_id| {
+            //             log::info!("event: disconnect: {}", chain_id);
+            //             this.connected.set(false);
+            //         })
+            //         .await;
+            //     });
+            // }
         };
         Ok(())
     }
@@ -103,21 +106,27 @@ impl UseEthereumHandle {
     }
 
     /// returns the chain_id as a decimal. returns None on invalid chain values
-    pub fn chain_id(&self) -> Option<i64> {
+    pub fn chain_id(&self) -> Option<u64> {
+        self.chain_id.as_ref().map(U256::as_u64)
+    }
+
+    pub fn chain_id_hex(&self) -> Option<String> {
         self.chain_id
             .as_ref()
-            .map(|chain_id| i64::from_str_radix(chain_id.trim_start_matches("0x"), 16).ok())
-            .unwrap_or(None)
+            .map(|chain_id| format!("0x{:X}", chain_id))
     }
 
     pub fn display_short_address(&self) -> String {
-        self.address().map(|a| a.to_string()).unwrap_or_default()
+        self.address()
+            .map(|address| address.to_string())
+            // .map(|address| format!("0x{}", &address.split_at(2).1))
+            .unwrap_or_default()
     }
 
     pub fn display_address(&self) -> String {
         self.address()
             .map(|add| format!("{:?}", add))
-            .expect("could not display address")
+            .unwrap_or(String::new())
     }
 
     pub async fn on_accounts_changed<F>(&self, callback: F)
@@ -223,7 +232,7 @@ impl UseEthereumHandle {
 pub fn use_ethereum(default: Option<Provider>) -> UseEthereumHandle {
     let connected = use_state(move || false);
     let accounts = use_state(move || None as Option<Vec<H160>>);
-    let chain_id = use_state(move || None as Option<String>);
+    let chain_id = use_state(move || None as Option<U256>);
 
     UseEthereumHandle {
         provider: default.unwrap_or_else(|| Provider::default().unwrap().unwrap()),
