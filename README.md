@@ -1,8 +1,15 @@
 # EthereumProvider
 
 ## Running the example
+
+NOTE: if you are targeting `wasm32-unknown-unknown` on `aarch64` (Macbook M1/M2), remember
+to ensure rust isn't installed via homebrew, use rustup. I've had so many errors via
+the homebrew install for wasm32 targets.
+
 ```bash
-rustup default nightly
+rustup toolchain install nightly
+rustup target add wasm32-unknown-unknown
+cargo install --locked wasm-bindgen-cli
 
 # First, install cargo dependencies (if you don't have them).
 cargo install trunk

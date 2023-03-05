@@ -5,15 +5,10 @@ use yew_ethereum_provider::{
 
 #[function_component]
 pub fn App() -> Html {
-    // this is optional
-    let disconnected = html! {
-        <button>{"Disconnect"}</button>
-    };
-
     html! {
         <div>
             <EthereumContextProvider>
-                <ConnectButton {disconnected}>
+                <ConnectButton>
                     <button>{"Connect"}</button>
                 </ConnectButton>
                 <SwitchNetworkButton chain={chain::ethereum()}/>

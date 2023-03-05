@@ -1,9 +1,11 @@
-use crate::hooks::UseEthereumHandle;
 use yew::prelude::*;
-use yew_hooks::prelude::*;
+
+use crate::UseEthereumHandle;
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
+    #[prop_or_default]
+    pub children: Children,
     pub connected_html: Option<Html>,
 }
 
@@ -15,7 +17,12 @@ pub fn ConnectButton(props: &Props) -> Html {
 
     let connect = {
         let ethereum = ethereum.clone();
-        use_async(async move { ethereum.connect().await })
+        Callback::from(move |_| {
+            let ethereum = ethereum.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                let _ = ethereum.connect().await;
+            });
+        })
     };
 
     let disconnect = {
@@ -41,7 +48,7 @@ pub fn ConnectButton(props: &Props) -> Html {
                     {connected_html}
                 </div>
             } else {
-                <div onclick={ Callback::from(move |_| connect.run()) }>
+                <div onclick={connect}>
                     <div class={classes!("btn", "btn-primary", "disconnected")}>
                         {"Connect Wallet"}
                     </div>
